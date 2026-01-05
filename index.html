@@ -5,296 +5,378 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>客訂系統</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    :root { --label-w: 6rem; }
     body { 
-      font-family: "Inter", system-ui, -apple-system, sans-serif; 
+      font-family: "Noto Sans TC", system-ui, -apple-system, sans-serif; 
       background-color: #f3f4f6;
-      font-size: 14px; /* 基底字體縮小 */
-    }
-    .no-wrap-label { white-space: nowrap; }
-    
-    /* 優化後的表格容器 */
-    .table-container {
-      width: 100%;
-      max-height: 65vh; /* 增加可視高度 */
-      overflow: auto;
-      position: relative;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.375rem;
-      background-color: white;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    
-    .table-container table { width: 100%; border-collapse: separate; border-spacing: 0; } 
-    
-    /* 緊湊型儲存格 */
-    .table-container td {
-      background-color: white;
-      border-bottom: 1px solid #f3f4f6;
-      padding: 0.35rem 0.5rem; /* 大幅減少 padding */
-      font-size: 0.85rem;
-      color: #374151;
-      white-space: nowrap;
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    /* 緊湊型表頭 */
-    .table-container th {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      background-color: #f9fafb;
       color: #1f2937;
-      font-weight: 700;
-      font-size: 0.8rem;
-      padding: 0.4rem 0.5rem;
-      border-bottom: 2px solid #e5e7eb;
+      font-size: 15px;
+    }
+    
+    /* === 核心：手機版卡片式表格 (RWD Table) === */
+    .responsive-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    
+    @media (max-width: 768px) {
+      .responsive-table thead { display: none; }
+      
+      .responsive-table tbody tr {
+        display: block;
+        background: white;
+        margin-bottom: 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+        padding: 0.75rem;
+        position: relative;
+      }
+      
+      .responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #f3f4f6;
+        text-align: right;
+        font-size: 0.95rem;
+      }
+      .responsive-table td:last-child { border-bottom: none; }
+      
+      .responsive-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 0.85rem;
+        margin-right: 1rem;
+        text-align: left;
+        min-width: 80px; 
+      }
+      
+      .responsive-table td.mobile-full-width {
+        display: block;
+        text-align: left;
+      }
+      .responsive-table td.mobile-full-width::before {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+    }
+
+    @media (min-width: 769px) {
+      .table-container {
+        border-radius: 0.5rem;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .responsive-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+      }
+      .responsive-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        white-space: nowrap;
+        vertical-align: middle; /* 確保垂直置中 */
+      }
+      .responsive-table tr:hover td { background-color: #f8fafc; }
+    }
+
+    /* === 元件樣式 === */
+    .btn { 
+      transition: all 0.2s; 
+      display: inline-flex; align-items: center; justify-content: center; 
+      font-weight: 500; border-radius: 0.5rem;
+    }
+    .btn:active { transform: scale(0.96); }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 600;
       white-space: nowrap;
-      text-align: center;
-      vertical-align: middle;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.05);
     }
-    .table-container tr:hover td { background-color: #f0f9ff; }
+    .status-badge.pending { background:#f3f4f6; color:#4b5563; }
+    .status-badge.purchase { background:#e0e7ff; color:#4338ca; }
+    .status-badge.arrived { background:#f3e8ff; color:#7e22ce; }
+    .status-badge.missed { background:#ffedd5; color:#c2410c; }
+    .status-badge.notified { background:#e0f2fe; color:#0369a1; }
+    .status-badge.closed { background:#dcfce7; color:#15803d; }
     
-    /* 標籤樣式優化 */
-    .tag { display:inline-flex; align-items:center; padding:0 0.5rem; margin:0.1rem; font-size:0.75rem; background:#e5e7eb; color:#374151; border-radius:4px; height: 24px; }
-    .tag .remove { margin-left:0.25rem; cursor:pointer; font-weight:bold; color:#9ca3af; }
-    
-    /* 狀態標籤微調 */
-    .status-tag { display:inline-flex; align-items:center; gap:0.25rem; padding:0.15rem 0.5rem; border-radius:999px; font-weight:600; font-size:0.75rem; border: 1px solid transparent; }
-    .status-paw { width:12px; height:12px; }
-    
-    .status-pending { background:#f3f4f6; color:#4b5563; border-color:#d1d5db; }
-    .status-purchase { background:#e0e7ff; color:#3730a3; border-color:#c7d2fe; }
-    .status-arrived { background:#f3e8ff; color:#6b21a8; border-color:#e9d5ff; }
-    .status-missed { background:#fff7ed; color:#9a3412; border-color:#ffedd5; }
-    .status-notified { background:#e0f2fe; color:#0369a1; border-color:#bae6fd; }
-    .status-closed { background:#dcfce7; color:#14532d; border-color:#bbf7d0; }
-    
-    .loader { border:3px solid #f3f4f3; border-top:3px solid #3b82f6; border-radius:50%; width:30px; height:30px; animation:spin 0.8s linear infinite; margin:10px auto; }
-    @keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
-    
-    /* Modal 優化 */
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:50; backdrop-filter: blur(2px); }
-    .modal { background:white; border-radius:0.5rem; width:95%; max-width:800px; max-height:95vh; overflow-y:auto; padding:1rem; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-    
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:0.25rem; padding:0.4rem 0.8rem; border-radius:0.375rem; font-size: 0.9rem; font-weight:500; cursor: pointer; transition: all 0.2s; }
-    .btn:active { transform: scale(0.98); }
-    
-    /* 手機版優化輸入框 */
-    input[type="text"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
-      font-size: 16px; /* 防止 iOS 縮放 */
-      padding: 0.4rem 0.5rem;
+    /* Tag 樣式 */
+    .tag { display:inline-flex; align-items:center; padding:0.1rem 0.5rem; margin:0.1rem; font-size:0.75rem; background:#fff; border:1px solid #d1d5db; color:#374151; border-radius:4px; }
+    .tag .remove { margin-left:0.25rem; cursor:pointer; font-weight:bold; color:#ef4444; }
+    .tag .remove:hover { color:#b91c1c; }
+
+    .tab-scroll-container {
+      display: flex; gap: 0.5rem; overflow-x: auto; 
+      padding-bottom: 0.5rem; margin-bottom: 0.5rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab-btn {
+      padding: 0.4rem 0.8rem;
+      border-radius: 99px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      color: #4b5563;
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .tab-btn.active {
+      background: #4f46e5;
+      color: white;
+      border-color: #4f46e5;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
     }
 
-    .topbar { background: white; display:flex; flex-wrap: wrap; gap:0.5rem; align-items:center; padding:0.5rem; border-radius:0.375rem; border: 1px solid #e5e7eb; }
-    
-    /* 狀態 Tab 優化 */
-    .status-tabs { display:flex; gap:0.35rem; margin-bottom:0.5rem; }
-    .status-tab { 
-      padding:0.35rem 0.75rem; border-radius:999px; background:#fff; cursor:pointer; font-size: 0.8rem; font-weight:500; color:#4b5563; 
-      border:1px solid #e5e7eb; white-space: nowrap;
+    .modal-backdrop { 
+      background-color: rgba(0,0,0,0.5); 
+      backdrop-filter: blur(3px);
     }
-    .status-tab.active { background:#4f46e5; color:white; border-color:#4338ca; }
-    .status-tab.all { font-weight: 700; }
-    .status-tabs-scroll { overflow-x:auto; padding-bottom:4px; margin-bottom: 0.5rem; -webkit-overflow-scrolling: touch; display: flex; }
-    
-    /* 收折面板樣式 */
-    .accordion-header { cursor: pointer; user-select: none; }
-    .accordion-content { transition: max-height 0.3s ease-in-out, opacity 0.3s; overflow: hidden; max-height: 0; opacity: 0; }
-    .accordion-content.open { max-height: 2000px; opacity: 1; }
-    .arrow-icon { transition: transform 0.3s; }
-    .arrow-icon.open { transform: rotate(180deg); }
+    .modal-card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      max-height: 90vh;
+    }
 
-    /* 黑名單警示 */
-    #blacklist-alert-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; background-color: #ef4444; color: white; padding: 0.75rem; text-align: center; font-weight: bold; z-index: 9999; display: none;
+    .input-field {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background-color: #fff;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
     }
     
-    /* 手機版 Grid 優化 class */
-    .grid-dense { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-    .col-span-2 { grid-column: span 2; }
+    /* 鎖定時的樣式 - 確保 disabled 生效 */
+    .input-field:disabled, .select-disabled {
+      background-color: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+      opacity: 0.7;
+      pointer-events: none; /* 防止點擊 */
+    }
+    
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-title::after {
+      content: ""; flex: 1; height: 1px; background: #e5e7eb;
+    }
 
-    /* 平板以上 */
-    @media (min-width: 768px) {
-      .grid-md-3 { grid-template-columns: repeat(3, 1fr); }
+    .loader {
+      border: 3px solid #f3f3f3; border-top: 3px solid #6366f1;
+      border-radius: 50%; width: 24px; height: 24px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Accordion 動畫修復 */
+    .accordion-content {
+      transition: grid-template-rows 0.3s ease-out;
+      display: grid;
+      grid-template-rows: 0fr;
+    }
+    .accordion-content.open {
+      grid-template-rows: 1fr;
+    }
+    .accordion-inner { 
+      overflow: hidden; 
+      min-height: 0;
+    }
+    
+    /* Accordion 標題列樣式 */
+    .accordion-toggle {
+      width: 100%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 1rem 1.25rem; 
+      background-color: white; 
+      transition: background-color 0.2s;
+      border-left-width: 4px;
+    }
+    .accordion-toggle:hover { background-color: #f9fafb; }
+    .accordion-toggle.border-indigo-500 { border-left-color: #6366f1; }
+    .accordion-toggle.border-blue-500 { border-left-color: #3b82f6; }
+    .accordion-toggle.border-red-500 { border-left-color: #ef4444; }
+    
+    .accordion-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* 調整資料列表視窗高度 (約 15 行的高度) */
+    #dataTableContainer, #longTerm_dataTableContainer, #blacklist_dataTableContainer {
+      max-height: 750px; /* 增加高度，約可顯示 15 行 */
+      overflow: auto; /* 支援上下左右捲動 */
     }
   </style>
 </head>
-<body class="text-gray-800">
+<body>
 
-  <!-- Header -->
-  <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-200">
-    <div class="max-w-full mx-auto px-3 py-2 flex items-center justify-between">
-      <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-        <span class="text-xl">🐾</span> 客訂系統
-      </h1>
-      <div class="text-xs text-gray-500" id="currentStoreDisplay"></div>
+  <!-- 頂部導航列 -->
+  <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+    <div class="w-full max-w-[96%] mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+        </div>
+        <h1 class="text-lg font-bold text-gray-800 tracking-tight">客訂系統</h1>
+      </div>
+      <div id="currentStoreBadge" class="hidden px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium"></div>
     </div>
-  </header>
+  </nav>
 
-  <div class="max-w-full mx-auto p-2 space-y-3 pb-10">
+  <!-- 加寬 main 容器 -->
+  <main class="w-full max-w-[96%] mx-auto p-4 space-y-5 pb-20">
 
-    <!-- Top Controls -->
-    <div class="bg-white p-2 rounded shadow-sm border border-gray-200">
-      <div class="flex flex-col md:flex-row gap-2 items-center justify-between">
-        <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <select id="storeSelect" class="flex-1 md:flex-none border border-gray-300 rounded px-2 py-1.5 text-sm bg-gray-50 max-w-[200px]"></select>
-          <label class="flex items-center gap-1.5 text-sm cursor-pointer select-none bg-gray-50 px-2 py-1.5 rounded border border-gray-200">
-            <input id="storeLockCheckbox" type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500" />
-            <span>鎖定</span>
+    <!-- 1. 控制台與店別選擇 (卡片樣式) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <div class="relative flex-1 sm:flex-none">
+            <select id="storeSelect" class="input-field appearance-none pr-8 font-medium text-gray-700">
+              <option value="">載入中...</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
+          <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors select-none">
+            <input id="storeLockCheckbox" type="checkbox" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+            <span class="text-sm font-medium text-gray-600">鎖定</span>
           </label>
-          <button id="refreshStoresBtn" class="btn bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200 text-xs px-2 whitespace-nowrap">重整</button>
         </div>
-        <div class="flex items-center justify-end w-full md:w-auto">
-          <div id="top-message" class="text-xs text-red-600 font-medium hidden"></div>
-        </div>
+        <button id="refreshStoresBtn" class="w-full sm:w-auto btn bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-3 py-2 text-sm">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          重整分店
+        </button>
       </div>
+      <div id="top-message" class="mt-2 text-sm font-medium hidden"></div>
     </div>
 
-    <!-- 新增訂單 Form (Accordion) -->
-    <div class="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
-      <div id="formToggleBtn" class="accordion-header bg-indigo-50 p-3 flex items-center justify-between border-b border-indigo-100">
-        <h2 class="font-bold text-indigo-800 text-sm flex items-center gap-2">
-          <span>📝 新增客訂單</span>
-          <span class="text-xs font-normal text-indigo-500">(點擊展開/收合)</span>
-        </h2>
-        <svg class="arrow-icon w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-      </div>
+    <!-- 2. 新增訂單 (Accordion) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <button id="formToggleBtn" class="accordion-toggle border-indigo-500 border-b border-gray-100">
+        <div class="accordion-title">
+          <span class="text-indigo-600 text-xl">📝</span>
+          <span>新增客訂單</span>
+        </div>
+        <svg id="arrowIcon" class="w-5 h-5 text-gray-400 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
 
       <div id="formContent" class="accordion-content">
-        <form id="orderForm" class="p-3 bg-white">
-          <div class="flex flex-col lg:flex-row gap-4">
-            
-            <!-- Customer Section -->
-            <div class="flex-1 space-y-3">
-              <div class="bg-gray-50 p-2.5 rounded border border-gray-100">
-                <div class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">顧客資料</div>
-                <!-- 手機版兩欄排列 -->
-                <div class="grid-dense">
-                   <div class="col-span-1">
-                     <label class="block text-xs font-medium text-gray-500 mb-1">客號</label>
-                     <input id="customerID" name="客號" type="text" class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="例如: 12345" />
-                   </div>
-                   <div class="col-span-1">
-                     <label class="block text-xs font-medium text-gray-500 mb-1">姓名</label>
-                     <input id="customerName" name="姓名" type="text" class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
-                   </div>
-                   <div class="col-span-1">
-                     <label class="block text-xs font-medium text-gray-500 mb-1">電話</label>
-                     <input id="phone" name="連絡電話" type="tel" class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" />
-                   </div>
-                   <div class="col-span-1">
-                     <label class="block text-xs font-medium text-gray-500 mb-1">LINE名稱</label>
-                     <input id="lineName" name="LINE名稱" type="text" class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
-                   </div>
-                   <div class="col-span-2 flex gap-4 pt-1">
-                      <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input id="paid" name="paid" type="checkbox" value="是" class="rounded text-indigo-600 focus:ring-indigo-500" />
-                        <span class="text-gray-700">已付清</span>
-                      </label>
-                      <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input id="longTerm" name="固定/長期客訂" type="checkbox" value="是" class="rounded text-indigo-600 focus:ring-indigo-500" />
-                        <span class="text-gray-700">長期客訂</span>
-                      </label>
-                   </div>
-                   <!-- 警告訊息 -->
-                   <div id="phone-warning" class="col-span-2 text-xs text-red-600 font-bold hidden bg-red-50 p-1 rounded"></div>
-                   
-                   <div class="col-span-2">
-                     <label class="block text-xs font-medium text-gray-500 mb-1">備註</label>
-                     <textarea id="notes" name="備註" rows="1" class="w-full border-gray-300 rounded shadow-sm text-sm" placeholder="備註事項..."></textarea>
-                   </div>
+        <div class="accordion-inner">
+          <form id="orderForm" class="p-4 sm:p-6 space-y-6">
+            <!-- 顧客區塊 -->
+            <div>
+              <div class="section-title">顧客資料</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label class="block text-xs font-medium text-gray-500 mb-1">客號</label><input name="客號" type="text" class="input-field" placeholder="輸入客號" /></div>
+                <div><label class="block text-xs font-medium text-gray-500 mb-1">姓名</label><input name="姓名" type="text" class="input-field" placeholder="顧客姓名" /></div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-gray-500 mb-1">電話</label>
+                  <input id="phone" name="連絡電話" type="tel" class="input-field" placeholder="09xx-xxx-xxx" />
+                  <div id="phone-warning" class="hidden mt-1 text-xs text-red-600 font-bold bg-red-50 p-2 rounded flex items-center gap-1"><span>⚠️ 此號碼在黑名單中！</span></div>
+                </div>
+                <div class="sm:col-span-2"><label class="block text-xs font-medium text-gray-500 mb-1">LINE 名稱</label><input name="LINE名稱" type="text" class="input-field" /></div>
+              </div>
+              <div class="flex gap-4 mt-3">
+                 <label class="flex items-center gap-2 cursor-pointer"><input name="付清" type="checkbox" value="是" class="w-4 h-4 text-indigo-600 rounded" /><span class="text-sm text-gray-700">已付清</span></label>
+                 <label class="flex items-center gap-2 cursor-pointer"><input name="固定/長期客訂" type="checkbox" value="是" class="w-4 h-4 text-indigo-600 rounded" /><span class="text-sm text-gray-700">長期客訂</span></label>
+              </div>
+            </div>
+
+            <!-- 商品區塊 A -->
+            <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
+              <div class="section-title text-indigo-600 !border-indigo-200">客訂商品 A (必填)</div>
+              <div class="space-y-3">
+                <input name="客訂商品A" type="text" required class="input-field border-indigo-200 focus:border-indigo-500" placeholder="商品名稱" />
+                <div class="flex gap-3">
+                  <input name="A商品規格" type="text" class="input-field flex-1 border-indigo-200" placeholder="規格/重量" />
+                  <input name="A數量" type="number" min="1" required class="input-field w-24 text-center border-indigo-200" placeholder="數量" />
                 </div>
               </div>
             </div>
 
-            <!-- Product Section -->
-            <div class="flex-1 space-y-3">
-              
-              <!-- Product A -->
-              <div class="bg-indigo-50/50 p-2.5 rounded border border-indigo-100">
-                <div class="text-xs font-bold text-indigo-600 uppercase mb-2 tracking-wider flex justify-between">
-                  <span>客訂商品 A (必填)</span>
-                </div>
-                <div class="grid grid-cols-12 gap-2">
-                  <div class="col-span-12">
-                     <input id="productAName" name="客訂商品A" type="text" required class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="商品名稱" />
-                  </div>
-                  <div class="col-span-8">
-                     <input id="productASpec" name="A商品規格" type="text" class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="規格/重量" />
-                  </div>
-                  <div class="col-span-4">
-                     <input id="productAQty" name="A數量" type="number" min="1" required class="w-full border-gray-300 rounded shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-center" placeholder="數量" />
-                  </div>
+            <!-- 商品區塊 B -->
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <div class="section-title">客訂商品 B (選填)</div>
+              <div class="space-y-3">
+                <input name="客訂商品B" type="text" class="input-field bg-white" placeholder="商品名稱" />
+                <div class="flex gap-3">
+                  <input name="B商品規格" type="text" class="input-field flex-1 bg-white" placeholder="規格/重量" />
+                  <input name="B數量" type="number" min="1" class="input-field w-24 text-center bg-white" placeholder="數量" />
                 </div>
               </div>
-
-              <!-- Product B -->
-              <div class="bg-gray-50 p-2.5 rounded border border-gray-100">
-                <div class="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">客訂商品 B (選填)</div>
-                <div class="grid grid-cols-12 gap-2">
-                  <div class="col-span-12">
-                     <input id="productBName" name="客訂商品B" type="text" class="w-full border-gray-300 rounded shadow-sm" placeholder="商品名稱" />
-                  </div>
-                  <div class="col-span-8">
-                     <input id="productBSpec" name="B商品規格" type="text" class="w-full border-gray-300 rounded shadow-sm" placeholder="規格/重量" />
-                  </div>
-                  <div class="col-span-4">
-                     <input id="productBQty" name="B數量" type="number" min="1" class="w-full border-gray-300 rounded shadow-sm text-center" placeholder="數量" />
-                  </div>
-                </div>
-              </div>
-              
             </div>
-          </div>
 
-          <div class="mt-4 pt-3 border-t border-gray-100 flex flex-col items-center">
-            <button type="submit" id="submitButton" class="w-full md:w-1/2 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded shadow transition-colors flex items-center justify-center gap-2">
-              <span>送出訂單</span>
-            </button>
-            <div id="message-box" class="hidden mt-2 w-full text-center text-sm p-2 rounded"></div>
-          </div>
-        </form>
+            <div class="pt-2"><label class="block text-xs font-medium text-gray-500 mb-1">備註</label><textarea name="備註" rows="2" class="input-field" placeholder="其他備註事項..."></textarea></div>
+            <div class="pt-2">
+              <button type="submit" id="submitButton" class="w-full btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 text-lg shadow-lg shadow-indigo-200">送出訂單</button>
+              <div id="message-box" class="hidden mt-3 p-3 rounded-lg text-center text-sm font-medium"></div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
-    <!-- Data Query Section -->
-    <div class="bg-white p-3 rounded shadow-sm border border-gray-200">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-gray-800">📋 客訂資料</h2>
-        <div class="text-xs text-gray-500">直接點擊編輯</div>
-      </div>
-
-      <!-- Controls -->
-      <div class="flex flex-col gap-2 mb-3">
+    <!-- 3. 資料查詢與列表區 (預設展開) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div class="space-y-3 mb-4">
+        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📋</span> 訂單管理</h2>
         <div class="flex gap-2">
-          <input id="searchInput" type="text" placeholder="搜尋客號、姓名、電話..." class="flex-1 border-gray-300 rounded shadow-sm text-sm" />
-          <button id="searchButton" type="button" class="btn bg-indigo-600 text-white hover:bg-indigo-700 whitespace-nowrap">搜尋</button>
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span>
+            <input id="searchInput" type="text" class="input-field pl-10" placeholder="搜尋姓名、電話、客號..." />
+          </div>
+          <button id="searchButton" class="btn bg-gray-800 text-white px-4 hover:bg-gray-900">搜尋</button>
         </div>
-        <div class="flex gap-2 overflow-x-auto pb-1">
-          <button id="refreshButton" type="button" class="btn bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 whitespace-nowrap text-xs">重整</button>
-          <button id="clearOverdueBtn" type="button" class="btn bg-orange-50 border border-orange-200 text-orange-700 hover:bg-orange-100 whitespace-nowrap text-xs">清除逾期</button>
+        <div class="flex justify-between items-center pt-1">
+           <div class="tab-scroll-container flex-1" id="statusTabs"></div>
+           <div class="flex gap-2 ml-2 shrink-0">
+             <button id="refreshButton" class="btn bg-white border border-gray-200 text-gray-600 p-2 rounded-full shadow-sm hover:bg-gray-50" title="重新整理">↺</button>
+             <button id="clearOverdueBtn" class="btn bg-white border border-orange-200 text-orange-600 px-3 py-1 text-xs hover:bg-orange-50">清除逾期</button>
+           </div>
         </div>
       </div>
 
-      <!-- Tabs -->
-      <div id="statusTabsContainer">
-        <div class="status-tabs-scroll">
-          <div id="statusTabs" class="status-tabs"></div>
-        </div>
-      </div>
-
-      <div id="data-message-box" class="hidden p-2 mb-2 rounded text-sm text-center"></div>
-
-      <div id="dataContainer">
-        <div id="dataLoader" class="loader hidden"></div>
-        <p id="noDataText" class="text-center text-gray-400 text-sm py-4 hidden">暫無資料</p>
+      <div id="dataContainer" class="relative">
+        <div id="dataLoader" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm"><div class="loader"></div></div>
+        <div id="data-message-box" class="hidden p-3 mb-3 bg-blue-50 text-blue-700 rounded-lg text-sm text-center"></div>
+        <p id="noDataText" class="hidden text-center py-10 text-gray-400">沒有找到符合的訂單</p>
         <div id="dataTableContainer" class="table-container hidden">
-          <table class="min-w-full">
+          <table class="responsive-table">
             <thead><tr id="data-table-headers"></tr></thead>
             <tbody id="data-table-body"></tbody>
           </table>
@@ -302,423 +384,265 @@
       </div>
     </div>
 
-    <!-- Long Term Section -->
-    <div class="bg-white p-3 rounded shadow-sm border border-gray-200 mt-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-blue-800">📅 長期客訂</h2>
-      </div>
-
-      <div class="flex gap-2 mb-3">
-        <input id="longTerm_searchInput" type="text" placeholder="搜尋長期客訂..." class="flex-1 border-gray-300 rounded shadow-sm text-sm" />
-        <button id="longTerm_searchButton" type="button" class="btn bg-blue-600 text-white hover:bg-blue-700">搜尋</button>
-        <button id="longTerm_refreshButton" type="button" class="btn bg-white border border-gray-300 text-gray-600">↺</button>
-      </div>
-
-      <div id="ltStatusTabsContainer">
-        <div class="status-tabs-scroll">
-          <div id="ltStatusTabs" class="status-tabs"></div>
+    <!-- 4. 長期客訂 (Accordion) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <button id="longTermToggleBtn" class="accordion-toggle border-blue-500 border-b border-gray-100">
+        <div class="accordion-title">
+          <span class="text-blue-600 text-xl">📅</span>
+          <span>長期客訂管理</span>
         </div>
-      </div>
+        <svg id="longTermArrowIcon" class="w-5 h-5 text-gray-400 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
 
-      <div id="longTerm_data-message-box" class="hidden p-2 mb-2 rounded text-sm"></div>
-
-      <div id="longTerm_dataContainer">
-        <div id="longTerm_dataLoader" class="loader hidden"></div>
-        <p id="longTerm_noDataText" class="text-center text-gray-400 text-sm py-4 hidden">無資料</p>
-        <div id="longTerm_dataTableContainer" class="table-container hidden">
-          <table class="min-w-full">
-            <thead><tr id="longTerm_data-table-headers"></tr></thead>
-            <tbody id="longTerm_data-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Blacklist Section -->
-    <div class="bg-white p-3 rounded shadow-sm border border-red-200 mt-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-red-700">🚫 黑名單</h2>
-        <button id="blacklist_addButton" type="button" class="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-xs">新增</button>
-      </div>
-
-      <div class="flex gap-2 mb-3">
-        <input id="blacklist_searchInput" type="text" placeholder="搜尋黑名單..." class="flex-1 border-gray-300 rounded shadow-sm text-sm" />
-        <button id="blacklist_searchButton" type="button" class="btn bg-gray-600 text-white hover:bg-gray-700">搜尋</button>
-        <button id="blacklist_refreshButton" type="button" class="btn bg-white border border-gray-300 text-gray-600">↺</button>
-      </div>
-
-      <div id="blacklist_dataContainer">
-        <div id="blacklist_dataLoader" class="loader hidden"></div>
-        <p id="blacklist_noDataText" class="text-center text-gray-400 text-sm py-4 hidden">無黑名單</p>
-        <div id="blacklist_dataTableContainer" class="table-container hidden">
-          <table class="min-w-full">
-            <thead><tr id="blacklist_data-table-headers"></tr></thead>
-            <tbody id="blacklist_data-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Alert Bar -->
-  <div id="blacklist-alert-bar"></div>
-
-  <!-- Edit Modal (Simplified Layout) -->
-  <div id="editModalBackdrop" class="modal-backdrop hidden">
-    <div class="modal flex flex-col">
-      <div class="flex items-center justify-between mb-3 border-b pb-2">
-        <h3 id="editModalTitle" class="text-lg font-bold text-gray-800">編輯訂單</h3>
-        <button id="closeEditModal" class="p-2 text-gray-500 hover:bg-gray-100 rounded text-xl">&times;</button>
-      </div>
-      <form id="editForm" class="flex-1 overflow-y-auto pr-1 space-y-3">
-        <input type="hidden" id="editRowIndex" name="row" />
-        <input type="hidden" id="editLongTermHidden" /> 
-        
-        <!-- Modal Grid Layout -->
-        <div class="grid grid-cols-2 gap-3">
-           <div class="col-span-1">
-             <label class="text-xs text-gray-500 block mb-1">客號</label>
-             <input id="editCustomerID" name="客號" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" />
-           </div>
-           <div class="col-span-1">
-             <label class="text-xs text-gray-500 block mb-1">姓名</label>
-             <input id="editCustomerName" name="姓名" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" />
-           </div>
-           <div class="col-span-2">
-             <label class="text-xs text-gray-500 block mb-1">電話</label>
-             <input id="editPhone" name="連絡電話" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" />
-           </div>
-
-           <!-- Product A -->
-           <div class="col-span-2 bg-gray-50 p-2 rounded border border-gray-100">
-             <div class="text-xs font-bold text-gray-400 mb-1">商品 A</div>
-             <div class="grid grid-cols-12 gap-2">
-               <div class="col-span-12"><input id="editProductAName" name="客訂商品A" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" placeholder="品名" /></div>
-               <div class="col-span-8"><input id="editProductASpec" name="A商品規格" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" placeholder="規格" /></div>
-               <div class="col-span-4"><input id="editProductAQty" name="A數量" type="number" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm text-center" placeholder="數量" /></div>
-             </div>
-           </div>
-
-           <!-- Product B -->
-           <div class="col-span-2 bg-gray-50 p-2 rounded border border-gray-100">
-             <div class="text-xs font-bold text-gray-400 mb-1">商品 B</div>
-             <div class="grid grid-cols-12 gap-2">
-               <div class="col-span-12"><input id="editProductBName" name="客訂商品B" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" placeholder="品名" /></div>
-               <div class="col-span-8"><input id="editProductBSpec" name="B商品規格" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" placeholder="規格" /></div>
-               <div class="col-span-4"><input id="editProductBQty" name="B數量" type="number" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm text-center" placeholder="數量" /></div>
-             </div>
-           </div>
-
-           <!-- Dates -->
-           <div class="col-span-2 space-y-2">
-             <div class="flex items-center gap-2">
-               <span class="text-xs text-gray-500 w-16">採購日期</span>
-               <input id="editPurchaseDate" name="採購日期" type="date" class="flex-1 border-gray-300 rounded py-1 px-2 text-sm" />
-               <button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2" data-target="editPurchaseDate">今天</button>
-             </div>
-             <div class="flex items-center gap-2">
-               <span class="text-xs text-gray-500 w-16">到貨日期</span>
-               <input id="editArrivalDate" name="到貨日期" type="date" class="flex-1 border-gray-300 rounded py-1 px-2 text-sm" />
-               <button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2" data-target="editArrivalDate">今天</button>
-             </div>
-             <div class="flex items-center gap-2">
-               <span class="text-xs text-gray-500 w-16">取走日期</span>
-               <input id="editPickupDate" name="取走日期" type="date" class="flex-1 border-gray-300 rounded py-1 px-2 text-sm" />
-               <button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2" data-target="editPickupDate">今天</button>
-             </div>
-           </div>
-
-           <div class="col-span-2">
-              <label class="flex items-center gap-2 text-sm p-1">
-                <input id="editPaid" name="paid" type="checkbox" value="是" class="rounded text-indigo-600 focus:ring-indigo-500" />
-                <span>已付清</span>
-              </label>
-           </div>
-           
-           <!-- Multi-date fields (Simplified UI) -->
-           <div class="col-span-2 bg-yellow-50 p-2 rounded border border-yellow-100">
-              <label class="text-xs font-bold text-gray-500 mb-1 block">未接電話</label>
-              <div class="flex gap-1 mb-1">
-                <input id="editMissedInput" type="date" class="flex-1 border-gray-300 rounded text-xs px-1" />
-                <button id="editAddMissed" type="button" class="btn bg-white border text-xs px-2">+</button>
-                <button id="editStampMissed" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button>
+      <div id="longTermContent" class="accordion-content">
+        <div class="accordion-inner">
+          <div class="p-4">
+            <div class="flex gap-2 mb-3">
+              <div class="relative flex-1"><input id="longTerm_searchInput" type="text" class="input-field" placeholder="搜尋長期客訂..." /></div>
+              <button id="longTerm_searchButton" class="btn bg-blue-600 text-white px-4">搜尋</button>
+              <button id="longTerm_refreshButton" class="btn bg-white border border-gray-200 text-gray-600">↺</button>
+            </div>
+            <div id="longTerm_dataContainer" class="relative min-h-[100px]">
+              <div id="longTerm_dataLoader" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-white/80"><div class="loader"></div></div>
+              <p id="longTerm_noDataText" class="hidden text-center py-4 text-gray-400">無長期訂單</p>
+              <div id="longTerm_dataTableContainer" class="table-container hidden">
+                <table class="responsive-table">
+                  <thead><tr id="longTerm_data-table-headers"></tr></thead>
+                  <tbody id="longTerm_data-table-body"></tbody>
+                </table>
               </div>
-              <div id="editMissedTags" class="flex flex-wrap gap-1"></div>
-              <input type="hidden" id="editMissedHidden" name="未接電話日期" />
-           </div>
-
-           <div class="col-span-2 bg-blue-50 p-2 rounded border border-blue-100">
-              <label class="text-xs font-bold text-gray-500 mb-1 block">通知日期</label>
-              <div class="flex gap-1 mb-1">
-                <input id="editNotifyInput" type="date" class="flex-1 border-gray-300 rounded text-xs px-1" />
-                <button id="editAddNotify" type="button" class="btn bg-white border text-xs px-2">+</button>
-                <button id="editStampNotify" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button>
-              </div>
-              <div id="editNotifyTags" class="flex flex-wrap gap-1"></div>
-              <input type="hidden" id="editNotifyHidden" name="通知日期" />
-           </div>
-
-           <div class="col-span-2">
-             <label class="text-xs text-gray-500 block mb-1">備註</label>
-             <textarea id="editNotes" name="備註" rows="2" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm"></textarea>
-           </div>
-           
-           <div class="col-span-2">
-             <label class="text-xs text-gray-500 block mb-1">分店調撥</label>
-             <input id="editStoreTransfer" name="分店調撥" class="w-full border-gray-300 rounded py-1.5 px-2 text-sm" />
-           </div>
-        </div>
-
-        <div class="flex justify-between pt-3 border-t mt-2">
-          <button type="button" id="deleteEdit" class="btn bg-red-100 text-red-700 hover:bg-red-200 text-xs">刪除此單</button>
-          <div class="flex gap-2">
-            <button type="button" id="cancelEdit" class="btn bg-gray-100 text-gray-700 text-sm">取消</button>
-            <button type="submit" id="saveEdit" class="btn bg-green-600 text-white hover:bg-green-700 text-sm">儲存</button>
+            </div>
           </div>
         </div>
-      </form>
+      </div>
+    </div>
+
+    <!-- 5. 黑名單 (Accordion) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <button id="blacklistToggleBtn" class="accordion-toggle border-red-500 border-b border-gray-100">
+        <div class="accordion-title">
+          <span class="text-red-600 text-xl">🚫</span>
+          <span>黑名單管理</span>
+        </div>
+        <svg id="blacklistArrowIcon" class="w-5 h-5 text-gray-400 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+
+      <div id="blacklistContent" class="accordion-content">
+        <div class="accordion-inner">
+          <div class="p-4">
+            <div class="flex gap-2 mb-3">
+              <div class="relative flex-1"><input id="blacklist_searchInput" type="text" class="input-field" placeholder="搜尋黑名單..." /></div>
+              <button id="blacklist_searchButton" class="btn bg-gray-600 text-white px-4">搜尋</button>
+              <button id="blacklist_addButton" class="btn bg-red-600 text-white px-4">新增</button>
+            </div>
+            <div id="blacklist_dataContainer" class="relative min-h-[100px]">
+              <div id="blacklist_dataLoader" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-white/80"><div class="loader"></div></div>
+              <p id="blacklist_noDataText" class="hidden text-center py-4 text-gray-400">無黑名單資料</p>
+              <div id="blacklist_dataTableContainer" class="table-container hidden">
+                <table class="responsive-table">
+                  <thead id="blacklist_data-table-headers">
+                      <!-- 這裡直接寫死表頭，確保結構完整 -->
+                      <tr>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">狀態</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">操作</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">客號</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">姓名</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">電話</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">原因</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">日期</th>
+                      </tr>
+                  </thead>
+                  <tbody id="blacklist_data-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="blacklist-alert-bar" class="fixed bottom-0 inset-x-0 bg-red-600 text-white p-3 text-center font-bold shadow-lg z-50 hidden transform transition-transform translate-y-full"></div>
+
+  <!-- Edit Modal -->
+  <div id="editModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[60]">
+    <div class="modal-card w-full max-w-lg m-4 max-h-[90vh]">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <h3 class="font-bold text-gray-800 text-lg">編輯訂單</h3>
+        <button id="closeEditModal" class="text-gray-400 hover:text-gray-600 p-1"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+      </div>
+      <div class="overflow-y-auto p-4 sm:p-6 bg-white">
+        <form id="editForm" class="space-y-5">
+          <input type="hidden" id="editRowIndex" name="row" />
+          <div class="grid grid-cols-2 gap-3">
+             <div class="col-span-1"><label class="text-xs text-gray-500">客號</label><input id="editCustomerID" name="客號" class="input-field mt-1" /></div>
+             <div class="col-span-1"><label class="text-xs text-gray-500">姓名</label><input id="editCustomerName" name="姓名" class="input-field mt-1" /></div>
+             <div class="col-span-2"><label class="text-xs text-gray-500">電話</label><input id="editPhone" name="連絡電話" class="input-field mt-1" /></div>
+             
+             <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+               <div class="flex gap-2 mb-2"><input id="editProductAName" name="客訂商品A" class="input-field flex-[3]" placeholder="商品 A" /><input id="editProductAQty" name="A數量" type="number" class="input-field flex-[1] text-center" placeholder="數" /></div>
+               <input id="editProductASpec" name="A商品規格" class="input-field text-sm" placeholder="規格 A" />
+             </div>
+             <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+               <div class="flex gap-2 mb-2"><input id="editProductBName" name="客訂商品B" class="input-field flex-[3]" placeholder="商品 B" /><input id="editProductBQty" name="B數量" type="number" class="input-field flex-[1] text-center" placeholder="數" /></div>
+               <input id="editProductBSpec" name="B商品規格" class="input-field text-sm" placeholder="規格 B" />
+             </div>
+
+             <div class="col-span-2 space-y-2 pt-2">
+               <!-- 採購 -->
+               <div class="flex items-center gap-2"><span class="text-xs text-gray-500 w-14">採購</span><input id="editPurchaseDate" name="採購日期" type="date" class="input-field flex-1 py-1 text-sm" /><button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2 py-1" data-target="editPurchaseDate">今</button></div>
+               
+               <!-- 到貨 -->
+               <div class="flex items-center gap-2"><span class="text-xs text-gray-500 w-14">到貨</span><input id="editArrivalDate" name="到貨日期" type="date" class="input-field flex-1 py-1 text-sm" /><button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2 py-1" data-target="editArrivalDate">今</button></div>
+               
+               <!-- 未接 (Multi) -->
+               <div class="bg-red-50 p-2 rounded border border-red-100">
+                   <div class="flex items-center gap-2 mb-1">
+                       <span class="text-xs font-bold text-red-500 w-14">未接</span>
+                       <input id="editMissedInput" type="date" class="input-field flex-1 py-1 text-sm" />
+                       <button type="button" id="editAddMissed" class="btn bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1">+</button>
+                       <button type="button" id="editStampMissed" class="btn bg-red-100 text-red-600 text-xs px-2 py-1">今</button>
+                   </div>
+                   <div id="editMissedTags" class="flex flex-wrap gap-1"></div>
+               </div>
+
+               <!-- 通知 (Multi) -->
+               <div class="bg-blue-50 p-2 rounded border border-blue-100">
+                   <div class="flex items-center gap-2 mb-1">
+                       <span class="text-xs font-bold text-blue-500 w-14">通知</span>
+                       <input id="editNotifyInput" type="date" class="input-field flex-1 py-1 text-sm" />
+                       <button type="button" id="editAddNotify" class="btn bg-white border border-gray-200 text-gray-600 text-xs px-2 py-1">+</button>
+                       <button type="button" id="editStampNotify" class="btn bg-blue-100 text-blue-600 text-xs px-2 py-1">今</button>
+                   </div>
+                   <div id="editNotifyTags" class="flex flex-wrap gap-1"></div>
+               </div>
+
+               <!-- 取走 -->
+               <div class="flex items-center gap-2"><span class="text-xs text-gray-500 w-14">取走</span><input id="editPickupDate" name="取走日期" type="date" class="input-field flex-1 py-1 text-sm" /><button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2 py-1" data-target="editPickupDate">今</button></div>
+             </div>
+
+             <div class="col-span-2 py-2"><label class="flex items-center gap-2 select-none"><input id="editPaid" name="付清" type="checkbox" value="是" class="w-4 h-4 text-indigo-600 rounded" /><span class="text-sm font-medium">已付清</span></label></div>
+             <div class="col-span-2"><label class="text-xs text-gray-500">備註</label><textarea id="editNotes" name="備註" rows="2" class="input-field mt-1"></textarea></div>
+             <input type="hidden" id="editStoreTransfer" name="分店調撥" /><input type="hidden" id="editMissedHidden" name="未接電話日期" /><input type="hidden" id="editNotifyHidden" name="通知日期" />
+          </div>
+          <div class="pt-4 border-t border-gray-100 flex gap-3">
+             <button type="button" id="deleteEdit" class="btn flex-1 bg-red-50 text-red-600 py-2.5 hover:bg-red-100">刪除</button>
+             <button type="submit" id="saveEdit" class="btn flex-[2] bg-indigo-600 text-white py-2.5 shadow-md shadow-indigo-200 hover:bg-indigo-700">儲存變更</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- Long Term Edit Modal (Simplified same structure) -->
-  <div id="longTerm_editModalBackdrop" class="modal-backdrop hidden">
-    <div class="modal flex flex-col">
-       <div class="flex items-center justify-between mb-3 border-b pb-2">
-        <h3 class="text-lg font-bold text-blue-800">編輯長期訂單</h3>
-        <button id="longTerm_closeEditModal" class="p-2 text-gray-500 text-xl">&times;</button>
+  <!-- Long Term Edit Modal -->
+  <div id="longTerm_editModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[60]">
+    <div class="modal-card w-full max-w-lg m-4 max-h-[90vh]">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-blue-50">
+        <h3 class="font-bold text-blue-800 text-lg">長期客訂編輯</h3>
+        <button id="longTerm_closeEditModal" class="text-gray-400 hover:text-gray-600">&times;</button>
       </div>
-      <form id="longTerm_editForm" class="flex-1 overflow-y-auto pr-1 space-y-3">
-        <input type="hidden" id="longTerm_editRowIndex" name="row" />
-        <input type="hidden" id="longTerm_editLongTermHidden" />
-        
-        <div class="grid grid-cols-2 gap-3">
-           <div class="col-span-1"><label class="text-xs text-gray-500 block">客號</label><input id="longTerm_editCustomerID" name="客號" class="w-full border-gray-300 rounded py-1 px-2 text-sm" /></div>
-           <div class="col-span-1"><label class="text-xs text-gray-500 block">姓名</label><input id="longTerm_editCustomerName" name="姓名" class="w-full border-gray-300 rounded py-1 px-2 text-sm" /></div>
-           <div class="col-span-2"><label class="text-xs text-gray-500 block">電話</label><input id="longTerm_editPhone" name="連絡電話" class="w-full border-gray-300 rounded py-1 px-2 text-sm" /></div>
-           
-           <div class="col-span-2 bg-gray-50 p-2 rounded">
-             <div class="text-xs text-gray-400 mb-1">商品 A</div>
-             <div class="grid grid-cols-12 gap-2">
-                <div class="col-span-12"><input id="longTerm_editProductAName" name="客訂商品A" class="w-full border-gray-300 rounded text-sm py-1" /></div>
-                <div class="col-span-8"><input id="longTerm_editProductASpec" name="A商品規格" class="w-full border-gray-300 rounded text-sm py-1" /></div>
-                <div class="col-span-4"><input id="longTerm_editProductAQty" name="A數量" class="w-full border-gray-300 rounded text-sm py-1 text-center" /></div>
-             </div>
-           </div>
-           
-           <div class="col-span-2 bg-gray-50 p-2 rounded">
-             <div class="text-xs text-gray-400 mb-1">商品 B</div>
-             <div class="grid grid-cols-12 gap-2">
-                <div class="col-span-12"><input id="longTerm_editProductBName" name="客訂商品B" class="w-full border-gray-300 rounded text-sm py-1" /></div>
-                <div class="col-span-8"><input id="longTerm_editProductBSpec" name="B商品規格" class="w-full border-gray-300 rounded text-sm py-1" /></div>
-                <div class="col-span-4"><input id="longTerm_editProductBQty" name="B數量" class="w-full border-gray-300 rounded text-sm py-1 text-center" /></div>
-             </div>
-           </div>
-
-           <div class="col-span-2"><label class="flex gap-2 text-sm"><input id="longTerm_editPaid" name="paid" type="checkbox" />已付清</label></div>
-
-           <!-- Multi Dates for Long Term -->
-           <div class="col-span-2 space-y-2">
-             <div class="bg-gray-50 p-2 rounded">
-               <label class="text-xs font-bold text-gray-500 block">採購記錄</label>
-               <div class="flex gap-1 mb-1"><input id="longTerm_editPurchaseInput" type="date" class="flex-1 border-gray-300 text-xs" /><button id="longTerm_editAddPurchase" type="button" class="btn bg-white border text-xs px-2">+</button><button id="longTerm_editStampPurchase" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button></div>
-               <div id="longTerm_editPurchaseTags" class="flex flex-wrap gap-1"></div>
-               <input type="hidden" id="longTerm_editPurchaseHidden" name="採購日期" />
+      <div class="overflow-y-auto p-4">
+        <form id="longTerm_editForm" class="space-y-4">
+          <input type="hidden" id="longTerm_editRowIndex" name="row" />
+          <div class="grid grid-cols-2 gap-3">
+             <input id="longTerm_editCustomerID" name="客號" class="input-field" placeholder="客號" />
+             <input id="longTerm_editCustomerName" name="姓名" class="input-field" placeholder="姓名" />
+             <input id="longTerm_editPhone" name="連絡電話" class="input-field col-span-2" placeholder="電話" />
+             
+             <div class="col-span-2 bg-gray-50 p-2 rounded border">
+                <input id="longTerm_editProductAName" name="客訂商品A" class="input-field mb-2" placeholder="商品A" />
+                <div class="flex gap-2"><input id="longTerm_editProductASpec" name="A商品規格" class="input-field flex-1" placeholder="規格" /><input id="longTerm_editProductAQty" name="A數量" class="input-field w-20 text-center" placeholder="數" /></div>
              </div>
              
-             <div class="bg-gray-50 p-2 rounded">
-               <label class="text-xs font-bold text-gray-500 block">到貨記錄</label>
-               <div class="flex gap-1 mb-1"><input id="longTerm_editArrivalInput" type="date" class="flex-1 border-gray-300 text-xs" /><button id="longTerm_editAddArrival" type="button" class="btn bg-white border text-xs px-2">+</button><button id="longTerm_editStampArrival" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button></div>
-               <div id="longTerm_editArrivalTags" class="flex flex-wrap gap-1"></div>
-               <input type="hidden" id="longTerm_editArrivalHidden" name="到貨日期" />
+             <div class="col-span-2 space-y-2 pt-2">
+               <div class="bg-gray-50 p-2 rounded border">
+                 <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-blue-600 w-14">採購</span><input id="longTerm_editPurchaseInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddPurchase" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampPurchase" class="btn bg-blue-100 text-blue-600 text-xs px-2">今</button></div>
+                 <div id="longTerm_editPurchaseTags" class="flex flex-wrap gap-1"></div>
+               </div>
+               <div class="bg-gray-50 p-2 rounded border">
+                 <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-purple-600 w-14">到貨</span><input id="longTerm_editArrivalInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddArrival" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampArrival" class="btn bg-purple-100 text-purple-600 text-xs px-2">今</button></div>
+                 <div id="longTerm_editArrivalTags" class="flex flex-wrap gap-1"></div>
+               </div>
+               <div class="bg-red-50 p-2 rounded border border-red-100">
+                 <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-red-500 w-14">未接</span><input id="longTerm_editMissedInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddMissed" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampMissed" class="btn bg-red-100 text-red-600 text-xs px-2">今</button></div>
+                 <div id="longTerm_editMissedTags" class="flex flex-wrap gap-1"></div>
+               </div>
+               <div class="bg-blue-50 p-2 rounded border border-blue-100">
+                 <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-blue-500 w-14">通知</span><input id="longTerm_editNotifyInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddNotify" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampNotify" class="btn bg-blue-100 text-blue-600 text-xs px-2">今</button></div>
+                 <div id="longTerm_editNotifyTags" class="flex flex-wrap gap-1"></div>
+               </div>
+               <div class="bg-gray-50 p-2 rounded border">
+                 <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-green-600 w-14">取走</span><input id="longTerm_editPickupInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddPickup" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampPickup" class="btn bg-green-100 text-green-600 text-xs px-2">今</button></div>
+                 <div id="longTerm_editPickupTags" class="flex flex-wrap gap-1"></div>
+               </div>
              </div>
 
-             <div class="bg-gray-50 p-2 rounded">
-               <label class="text-xs font-bold text-gray-500 block">取貨記錄</label>
-               <div class="flex gap-1 mb-1"><input id="longTerm_editPickupInput" type="date" class="flex-1 border-gray-300 text-xs" /><button id="longTerm_editAddPickup" type="button" class="btn bg-white border text-xs px-2">+</button><button id="longTerm_editStampPickup" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button></div>
-               <div id="longTerm_editPickupTags" class="flex flex-wrap gap-1"></div>
-               <input type="hidden" id="longTerm_editPickupHidden" name="取走日期" />
-             </div>
-             
-             <div class="bg-yellow-50 p-2 rounded">
-               <label class="text-xs font-bold text-gray-500 block">未接電話</label>
-               <div class="flex gap-1 mb-1"><input id="longTerm_editMissedInput" type="date" class="flex-1 border-gray-300 text-xs" /><button id="longTerm_editAddMissed" type="button" class="btn bg-white border text-xs px-2">+</button><button id="longTerm_editStampMissed" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button></div>
-               <div id="longTerm_editMissedTags" class="flex flex-wrap gap-1"></div>
-               <input type="hidden" id="longTerm_editMissedHidden" name="未接電話日期" />
-             </div>
-             
-             <div class="bg-blue-50 p-2 rounded">
-               <label class="text-xs font-bold text-gray-500 block">通知記錄</label>
-               <div class="flex gap-1 mb-1"><input id="longTerm_editNotifyInput" type="date" class="flex-1 border-gray-300 text-xs" /><button id="longTerm_editAddNotify" type="button" class="btn bg-white border text-xs px-2">+</button><button id="longTerm_editStampNotify" type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2">今</button></div>
-               <div id="longTerm_editNotifyTags" class="flex flex-wrap gap-1"></div>
-               <input type="hidden" id="longTerm_editNotifyHidden" name="通知日期" />
-             </div>
-           </div>
-           
-           <div class="col-span-2"><label class="text-xs text-gray-500 block">備註</label><textarea id="longTerm_editNotes" name="備註" rows="2" class="w-full border-gray-300 rounded text-sm p-1"></textarea></div>
-           <div class="col-span-2"><label class="text-xs text-gray-500 block">調撥</label><input id="longTerm_editStoreTransfer" name="分店調撥" class="w-full border-gray-300 rounded text-sm p-1" /></div>
-        </div>
-
-        <div class="flex justify-between pt-3 border-t mt-2">
-          <button type="button" id="longTerm_deleteEdit" class="btn bg-red-100 text-red-700 text-xs">刪除</button>
-          <div class="flex gap-2">
-            <button type="button" id="longTerm_cancelEdit" class="btn bg-gray-100 text-gray-700 text-sm">取消</button>
-            <button type="submit" id="longTerm_saveEdit" class="btn bg-green-600 text-white text-sm">儲存</button>
+             <div class="col-span-2"><textarea id="longTerm_editNotes" name="備註" class="input-field" placeholder="備註"></textarea></div>
           </div>
-        </div>
-      </form>
+          <div class="flex gap-3 pt-3">
+            <button type="button" id="longTerm_deleteEdit" class="btn bg-red-50 text-red-600 flex-1 py-2">刪除</button>
+            <button type="submit" id="longTerm_saveEdit" class="btn bg-blue-600 text-white flex-[2] py-2">儲存</button>
+          </div>
+          <input type="hidden" id="longTerm_editProductBName" name="客訂商品B" /><input type="hidden" id="longTerm_editProductBSpec" name="B商品規格" /><input type="hidden" id="longTerm_editProductBQty" name="B數量" /><input type="checkbox" id="longTerm_editPaid" name="付清" class="hidden" /><input type="hidden" id="longTerm_editPurchaseHidden" name="採購日期" /><input type="hidden" id="longTerm_editArrivalHidden" name="到貨日期" /><input type="hidden" id="longTerm_editPickupHidden" name="取走日期" /><input type="hidden" id="longTerm_editMissedHidden" name="未接電話日期" /><input type="hidden" id="longTerm_editNotifyHidden" name="通知日期" /><input type="hidden" id="longTerm_editStoreTransfer" name="分店調撥" />
+        </form>
+      </div>
     </div>
   </div>
 
   <!-- Blacklist Add Modal -->
-  <div id="blacklist_addModalBackdrop" class="modal-backdrop hidden">
-    <div class="modal flex flex-col max-w-md">
-      <div class="flex items-center justify-between mb-3 border-b pb-2">
-        <h3 class="text-lg font-bold text-red-700">新增黑名單</h3>
-        <button id="blacklist_closeAddModal" class="p-2 text-gray-500 text-xl">&times;</button>
+  <div id="blacklist_addModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[60]">
+    <div class="modal-card w-full max-w-sm m-4">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-red-50">
+        <h3 class="font-bold text-red-800 text-lg">新增黑名單</h3>
+        <button id="blacklist_closeAddModal" class="text-gray-400 hover:text-gray-600">&times;</button>
       </div>
-      <form id="blacklist_addForm" class="space-y-3">
-         <div><label class="text-xs text-gray-500">電話 (選填)</label><input name="電話" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">姓名 (選填)</label><input name="姓名" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">客號 (選填)</label><input name="客號" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">原因</label><input name="原因" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <input type="hidden" id="blacklist_addStore" name="店別" />
-         <div class="flex justify-end gap-2 pt-2">
-           <button type="button" id="blacklist_cancelAdd" class="btn bg-gray-100">取消</button>
-           <button type="submit" class="btn bg-red-600 text-white">新增</button>
-         </div>
-      </form>
+      <div class="p-4">
+        <form id="blacklist_addForm" class="space-y-3">
+           <input name="電話" class="input-field" placeholder="電話 (選填)" />
+           <input name="姓名" class="input-field" placeholder="姓名 (選填)" />
+           <input name="客號" class="input-field" placeholder="客號 (選填)" />
+           <input name="原因" class="input-field" placeholder="原因" required />
+           <input type="hidden" id="blacklist_addStore" name="店別" />
+           <div class="flex justify-end gap-2 pt-2">
+             <button type="button" id="blacklist_cancelAdd" class="btn bg-gray-100 px-4 py-2">取消</button>
+             <button type="submit" class="btn bg-red-600 text-white px-4 py-2">新增</button>
+           </div>
+        </form>
+      </div>
     </div>
   </div>
 
   <!-- Blacklist Edit Modal -->
-  <div id="blacklist_editModalBackdrop" class="modal-backdrop hidden">
-    <div class="modal flex flex-col max-w-md">
-      <div class="flex items-center justify-between mb-3 border-b pb-2">
-        <h3 class="text-lg font-bold text-red-700">編輯黑名單</h3>
-        <button id="blacklist_closeEditModal" class="p-2 text-gray-500 text-xl">&times;</button>
+  <div id="blacklist_editModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[60]">
+    <div class="modal-card w-full max-w-sm m-4">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-red-50">
+        <h3 class="font-bold text-red-800 text-lg">編輯黑名單</h3>
+        <button id="blacklist_closeEditModal" class="text-gray-400 hover:text-gray-600">&times;</button>
       </div>
-      <form id="blacklist_editForm" class="space-y-3">
-         <input type="hidden" id="blacklist_editRowIndex" name="row" />
-         <div><label class="text-xs text-gray-500">電話</label><input id="bl_edit_phone" name="電話" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">姓名</label><input id="bl_edit_name" name="姓名" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">客號</label><input id="bl_edit_custID" name="客號" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">原因</label><input id="bl_edit_reason" name="原因" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">日期</label><input id="bl_edit_date" name="日期" type="date" class="w-full border-gray-300 rounded p-1.5" /></div>
-         <div><label class="text-xs text-gray-500">備註</label><textarea id="bl_edit_notes" name="備註" class="w-full border-gray-300 rounded p-1.5"></textarea></div>
-         <input type="hidden" id="bl_edit_store" name="店別" />
-         
-         <div class="flex justify-end gap-2 pt-2">
-           <button type="button" id="blacklist_cancelEdit" class="btn bg-gray-100">取消</button>
-           <button type="submit" class="btn bg-green-600 text-white">儲存</button>
-         </div>
-      </form>
+      <div class="p-4">
+        <form id="blacklist_editForm" class="space-y-3">
+           <input type="hidden" id="blacklist_editRowIndex" name="row" />
+           <input id="bl_edit_phone" name="電話" class="input-field" placeholder="電話" />
+           <input id="bl_edit_name" name="姓名" class="input-field" placeholder="姓名" />
+           <input id="bl_edit_custID" name="客號" class="input-field" placeholder="客號" />
+           <input id="bl_edit_reason" name="原因" class="input-field" placeholder="原因" />
+           <input id="bl_edit_date" name="日期" type="date" class="input-field" />
+           <textarea id="bl_edit_notes" name="備註" class="input-field" placeholder="備註"></textarea>
+           <input type="hidden" id="bl_edit_store" name="店別" />
+           <div class="flex justify-end gap-2 pt-2">
+             <button type="button" id="blacklist_cancelEdit" class="btn bg-gray-100 px-4 py-2">取消</button>
+             <button type="submit" class="btn bg-green-600 text-white px-4 py-2">儲存</button>
+           </div>
+        </form>
+      </div>
     </div>
   </div>
 
   <script>
-    // --- 核心邏輯與原本保持一致，僅針對 UI 事件做綁定 ---
-    
-    // CONSTANTS & DOM Refs
-    // 請確認此 URL 與您的 Apps Script 部署網址一致
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfDwaVTkHD-HGtY-6MzxscARnxwML9j1Ejn4v5cvPCAlgIPNRNkuU07r_61OBEVAYK/exec";
     
-    // Accordion Logic
-    const formToggleBtn = document.getElementById('formToggleBtn');
-    const formContent = document.getElementById('formContent');
-    const arrowIcon = document.querySelector('.arrow-icon');
-    
-    formToggleBtn.addEventListener('click', () => {
-      const isOpen = formContent.classList.contains('open');
-      if (isOpen) {
-        formContent.classList.remove('open');
-        arrowIcon.classList.remove('open');
-      } else {
-        formContent.classList.add('open');
-        arrowIcon.classList.add('open');
-      }
-    });
-
-    // 預設展開或收合？這裡設定預設收合，若想預設展開請在 HTML class 加 open
-    
-    // ... (以下為與原邏輯相同的 JavaScript，適配新 ID) ...
-
-    const storeSelect = document.getElementById('storeSelect');
-    const storeLockCheckbox = document.getElementById('storeLockCheckbox');
-    const refreshStoresBtn = document.getElementById('refreshStoresBtn');
-    const topMessage = document.getElementById('top-message');
-    const messageBox = document.getElementById('message-box');
-    const form = document.getElementById('orderForm');
-    const submitButton = document.getElementById('submitButton');
-    const currentStoreDisplay = document.getElementById('currentStoreDisplay');
-
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
-    const refreshButton = document.getElementById('refreshButton');
-    const clearOverdueBtn = document.getElementById('clearOverdueBtn');
-    const dataMessageBox = document.getElementById('data-message-box');
-    const dataLoader = document.getElementById('dataLoader');
-    const noDataText = document.getElementById('noDataText');
-    const dataTableContainer = document.getElementById('dataTableContainer');
-    const dataTableHeaders = document.getElementById('data-table-headers');
-    const dataTableBody = document.getElementById('data-table-body');
-
-    const longTerm_searchInput = document.getElementById('longTerm_searchInput');
-    const longTerm_searchButton = document.getElementById('longTerm_searchButton');
-    const longTerm_refreshButton = document.getElementById('longTerm_refreshButton');
-    const longTerm_dataMessageBox = document.getElementById('longTerm_data-message-box');
-    const longTerm_dataLoader = document.getElementById('longTerm_dataLoader');
-    const longTerm_noDataText = document.getElementById('longTerm_noDataText');
-    const longTerm_dataTableContainer = document.getElementById('longTerm_dataTableContainer');
-    const longTerm_dataTableHeaders = document.getElementById('longTerm_data-table-headers');
-    const longTerm_dataTableBody = document.getElementById('longTerm_data-table-body');
-
-    // Blacklist Refs
-    const blacklistAlertBar = document.getElementById('blacklist-alert-bar');
-    const blacklistSearchInput = document.getElementById('blacklist_searchInput');
-    const blacklistSearchButton = document.getElementById('blacklist_searchButton');
-    const blacklistRefreshButton = document.getElementById('blacklist_refreshButton');
-    const blacklistDataLoader = document.getElementById('blacklist_dataLoader');
-    const blacklistNoDataText = document.getElementById('blacklist_noDataText');
-    const blacklistDataTableContainer = document.getElementById('blacklist_dataTableContainer');
-    const blacklistDataTableHeaders = document.getElementById('blacklist_data-table-headers');
-    const blacklistDataTableBody = document.getElementById('blacklist_data-table-body');
-    const blacklistAddButton = document.getElementById('blacklist_addButton');
-    const blacklistAddModalBackdrop = document.getElementById('blacklist_addModalBackdrop');
-    const blacklistCloseAddModal = document.getElementById('blacklist_closeAddModal');
-    const blacklistCancelAdd = document.getElementById('blacklist_cancelAdd');
-    const blacklistAddForm = document.getElementById('blacklist_addForm');
-    const blacklistAddStoreInput = document.getElementById('blacklist_addStore');
-
-    const statusTabsEl = document.getElementById('statusTabs');
-    const ltStatusTabsEl = document.getElementById('ltStatusTabs');
-
-    // Edit Modals
-    const editModalBackdrop = document.getElementById('editModalBackdrop');
-    const closeEditModal = document.getElementById('closeEditModal');
-    const cancelEdit = document.getElementById('cancelEdit');
-    const editForm = document.getElementById('editForm');
-    const deleteEditBtn = document.getElementById('deleteEdit');
-    
-    const longTerm_editModalBackdrop = document.getElementById('longTerm_editModalBackdrop');
-    const longTerm_closeEditModal = document.getElementById('longTerm_closeEditModal');
-    const longTerm_cancelEdit = document.getElementById('longTerm_cancelEdit');
-    const longTerm_deleteEditBtn = document.getElementById('longTerm_deleteEdit');
-    const longTerm_editForm = document.getElementById('longTerm_editForm');
-
-    // Tag Controls (Simplified for UI, logic remains)
-    const editAddMissed = document.getElementById('editAddMissed');
-    const editStampMissed = document.getElementById('editStampMissed');
-    const editMissedInput = document.getElementById('editMissedInput');
-    const editMissedTags = document.getElementById('editMissedTags');
-    const editMissedHidden = document.getElementById('editMissedHidden');
-
-    const editAddNotify = document.getElementById('editAddNotify');
-    const editStampNotify = document.getElementById('editStampNotify');
-    const editNotifyInput = document.getElementById('editNotifyInput');
-    const editNotifyTags = document.getElementById('editNotifyTags');
-    const editNotifyHidden = document.getElementById('editNotifyHidden');
-
+    // Declare Element Collections (Defined BEFORE setupTagControls is called)
     const longTerm_editPurchaseCtrl_el = {
       addBtn: document.getElementById('longTerm_editAddPurchase'),
       stampBtn: document.getElementById('longTerm_editStampPurchase'),
@@ -755,133 +679,108 @@
       hiddenInput: document.getElementById('longTerm_editNotifyHidden')
     };
 
-    // --- Helpers ---
-    function closeModal(){ editModalBackdrop.classList.add('hidden'); }
-    function longTerm_closeModal(){ longTerm_editModalBackdrop.classList.add('hidden'); }
-    function closeBlacklistAddModal() { blacklistAddModalBackdrop.classList.add('hidden'); }
-    function openBlacklistAddModal() {
-      const storeText = storeSelect.options[storeSelect.selectedIndex]?.text || '';
-      const parts = storeText.split('—');
-      const storeName = parts.length > 1 ? parts[1].trim() : storeText.trim();
-      blacklistAddStoreInput.value = storeName.replace(/^--.*--$/, ''); 
-      blacklistAddModalBackdrop.classList.remove('hidden');
+    // Tag Helpers (Moved to top to prevent ReferenceError)
+    function setupTagControls(addBtn, stampBtn, inputEl, tagsContainer, hiddenInput){
+      let items = [];
+      addBtn && addBtn.addEventListener('click', ()=>{
+        const v = inputEl.value;
+        if(v && !items.includes(v)){ items.push(v); items.sort(); inputEl.value=''; render(); }
+      });
+      stampBtn && stampBtn.addEventListener('click', ()=>{
+        const v = todayLocalForInput();
+        if(!items.includes(v)){ items.push(v); items.sort(); render(); }
+      });
+      function render(){
+        tagsContainer.innerHTML = '';
+        items.forEach(d => {
+           const div = document.createElement('div');
+           div.className = 'tag';
+           div.innerHTML = `<span>${d}</span><span class="remove" data-date="${d}">&times;</span>`;
+           tagsContainer.appendChild(div);
+        });
+        hiddenInput.value = items.join(', ');
+      }
+      tagsContainer.addEventListener('click', (e)=>{
+        const removeBtn = e.target.closest('.remove');
+        if(removeBtn){
+          const d = removeBtn.dataset.date;
+          items = items.filter(x=>x!==d); render();
+        }
+      });
+      return { setItems(arr){ items = (arr||[]).filter(Boolean); items.sort(); render(); }, getItems(){ return items.slice(); } };
     }
 
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function todayLocalForInput() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-    function todayLocalForSheet() { const d=new Date(); return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}`; }
-    function digitsOnly(s){ return String(s||'').replace(/\D/g,''); }
-    function cleanPhone(p) { return String(p || '').replace(/\D/g, ''); }
-
-    function showTopMessage(txt, isError=false){
-      if(!txt){ topMessage.classList.add('hidden'); topMessage.textContent=''; return; }
-      topMessage.textContent = txt;
-      topMessage.classList.remove('hidden');
-      topMessage.style.color = isError ? '#b91c1c' : '#047857';
+    // Accordion Logic
+    function toggleAccordion(btn, content, icon) {
+      btn.addEventListener('click', () => {
+        const isOpen = content.classList.contains('open');
+        content.classList.toggle('open');
+        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+      });
     }
+    
+    toggleAccordion(document.getElementById('formToggleBtn'), document.getElementById('formContent'), document.getElementById('arrowIcon'));
+    toggleAccordion(document.getElementById('longTermToggleBtn'), document.getElementById('longTermContent'), document.getElementById('longTermArrowIcon'));
+    toggleAccordion(document.getElementById('blacklistToggleBtn'), document.getElementById('blacklistContent'), document.getElementById('blacklistArrowIcon'));
 
-    function showMessage(type, html){
-      if(!messageBox){ console.error(html); return; }
-      messageBox.innerHTML = html;
-      messageBox.className = 'mt-2 w-full text-center text-sm p-2 rounded';
-      if(type === 'success') messageBox.classList.add('bg-green-100','text-green-800');
-      else messageBox.classList.add('bg-red-100','text-red-800');
-      messageBox.classList.remove('hidden');
-    }
-    function hideMessage(){ if(messageBox) messageBox.classList.add('hidden'); }
+    // DOM Elements & Refs
+    const storeSelect = document.getElementById('storeSelect');
+    const storeLockCheckbox = document.getElementById('storeLockCheckbox');
+    const refreshStoresBtn = document.getElementById('refreshStoresBtn');
+    const form = document.getElementById('orderForm');
+    const submitButton = document.getElementById('submitButton');
+    const currentStoreBadge = document.getElementById('currentStoreBadge');
+    const topMessage = document.getElementById('top-message'); // Ensure this is defined
 
-    function showDataMessage(type, html, isLongTerm=false){
-      const box = isLongTerm ? longTerm_dataMessageBox : dataMessageBox;
-      if(!box) return;
-      box.innerHTML = html;
-      box.className = 'p-2 mb-2 rounded text-sm text-center';
-      if(type === 'error') box.classList.add('bg-red-100','text-red-800');
-      else if(type === 'info') box.classList.add('bg-blue-50','text-blue-800');
-      else box.classList.add('bg-gray-100','text-gray-800');
-      box.classList.remove('hidden');
-    }
-    function hideDataMessage(isLongTerm=false){
-      const box = isLongTerm ? longTerm_dataMessageBox : dataMessageBox;
-      if(box) box.classList.add('hidden');
-    }
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const refreshButton = document.getElementById('refreshButton');
+    const clearOverdueBtn = document.getElementById('clearOverdueBtn');
+    
+    const longTerm_searchInput = document.getElementById('longTerm_searchInput');
+    const longTerm_searchButton = document.getElementById('longTerm_searchButton');
+    const longTerm_refreshButton = document.getElementById('longTerm_refreshButton');
 
-    // --- Data Variables ---
+    const blacklistSearchInput = document.getElementById('blacklist_searchInput');
+    const blacklistSearchButton = document.getElementById('blacklist_searchButton');
+    const blacklistAddButton = document.getElementById('blacklist_addButton');
+    
+    // Data Variables
     let allOrders = [];
     let allLongTermOrders = [];
     let allBlacklistData = [];
-    let tableHeadersOriginal = []; 
-    let longTerm_tableHeadersOriginal = [];
+    let currentFilter = 'all';
+    let dataTableHeaders = document.getElementById('data-table-headers');
+    let longTerm_dataTableHeaders = document.getElementById('longTerm_data-table-headers');
+    let blacklistDataTableHeaders = document.getElementById('blacklist_data-table-headers');
+    let blacklistDataTableBody = document.getElementById('blacklist_data-table-body');
     
-    let currentStatusFilter = 'all';
-    let currentLTStatusFilter = 'all';
-    
-    let headerNameMap = {
-      '客訂商品A':'品名A','A商品規格':'規格A',
-      '客訂商品B':'品名B','B商品規格':'規格B',
-      'A數量':'數A', 'B數量':'數B',
-      '固定/長期客訂': '長期', 'paid': '付清',
-      '連絡電話': '電話', 'LINE名稱': 'LINE'
-    };
+    // Init Helpers
+    const editMissedCtrl = setupTagControls(document.getElementById('editAddMissed'), document.getElementById('editStampMissed'), document.getElementById('editMissedInput'), document.getElementById('editMissedTags'), document.getElementById('editMissedHidden'));
+    const editNotifyCtrl = setupTagControls(document.getElementById('editAddNotify'), document.getElementById('editStampNotify'), document.getElementById('editNotifyInput'), document.getElementById('editNotifyTags'), document.getElementById('editNotifyHidden'));
 
-    function getOrderStatus(order){
-      const purchaseDate = order['採購日期'];
-      const arrivalDate = order['到貨日期'];
-      const missedCallDates = order['未接電話日期'];
-      const notifyDates = order['通知日期'];
-      const pickupDate = order['取走日期'];
-      if (pickupDate && String(pickupDate).trim()) return { text:'已取貨', class:'status-closed' };
-      if (notifyDates && String(notifyDates).trim()) return { text:'已通知', class:'status-notified' };
-      if (missedCallDates && String(missedCallDates).trim()) return { text:'未接', class:'status-missed' };
-      if (arrivalDate && String(arrivalDate).trim()) return { text:'已到貨', class:'status-arrived' };
-      if (purchaseDate && String(purchaseDate).trim()) return { text:'已採購', class:'status-purchase' };
-      return { text:'未處理', class:'status-pending' };
+    const longTerm_editPurchaseCtrl = setupTagControls(longTerm_editPurchaseCtrl_el.addBtn, longTerm_editPurchaseCtrl_el.stampBtn, longTerm_editPurchaseCtrl_el.inputEl, longTerm_editPurchaseCtrl_el.tagsContainer, longTerm_editPurchaseCtrl_el.hiddenInput);
+    const longTerm_editArrivalCtrl = setupTagControls(longTerm_editArrivalCtrl_el.addBtn, longTerm_editArrivalCtrl_el.stampBtn, longTerm_editArrivalCtrl_el.inputEl, longTerm_editArrivalCtrl_el.tagsContainer, longTerm_editArrivalCtrl_el.hiddenInput);
+    const longTerm_editPickupCtrl = setupTagControls(longTerm_editPickupCtrl_el.addBtn, longTerm_editPickupCtrl_el.stampBtn, longTerm_editPickupCtrl_el.inputEl, longTerm_editPickupCtrl_el.tagsContainer, longTerm_editPickupCtrl_el.hiddenInput);
+    const longTerm_editMissedCtrl = setupTagControls(longTerm_editMissedCtrl_el.addBtn, longTerm_editMissedCtrl_el.stampBtn, longTerm_editMissedCtrl_el.inputEl, longTerm_editMissedCtrl_el.tagsContainer, longTerm_editMissedCtrl_el.hiddenInput);
+    const longTerm_editNotifyCtrl = setupTagControls(longTerm_editNotifyCtrl_el.addBtn, longTerm_editNotifyCtrl_el.stampBtn, longTerm_editNotifyCtrl_el.inputEl, longTerm_editNotifyCtrl_el.tagsContainer, longTerm_editNotifyCtrl_el.hiddenInput);
+
+    // Init
+    window.addEventListener('load', async () => {
+      renderTabs();
+      await fetchStores();
+      await fetchOrders(); 
+      fetchBlacklistData();
+    });
+
+    // Helper Functions
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function todayLocalForInput() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+    function digitsOnly(s){ return String(s||'').replace(/\D/g,''); }
+    function parseMultiDateStringToArray(dateString) {
+        if (!dateString || typeof dateString !== 'string') return [];
+        return dateString.split(/[,;，\s]+/).map(s => toDateOnly(s)).filter(Boolean);
     }
-    
-    function pawSVG(){ return `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234b5563'%3E%3Cpath d='M19.5 10.5c0 1.38-1.12 2.5-2.5 2.5s-2.5-1.12-2.5-2.5S15.62 8 17 8s2.5 1.12 2.5 2.5zM11.5 6c0 1.38-1.12 2.5-2.5 2.5S6.5 7.38 6.5 6 7.62 3.5 9 3.5 11.5 4.62 11.5 6zM6 13.5c0 1.38-1.12 2.5-2.5 2.5S1 14.88 1 13.5 2.12 11 3.5 11 6 12.12 6 13.5zM21 13.5c0 1.38-1.12 2.5-2.5 2.5S16 14.88 16 13.5 17.12 11 18.5 11 21 12.12 21 13.5zM12 12c-2 0-4 2-4 4 0 2 1.79 4 4 4s4-2 4-4c0-2-2-4-4-4z'/%3E%3C/svg%3E" class="status-paw" />`; }
-
-    function formatPhone(rawVal){
-      if(rawVal===undefined || rawVal===null) return '';
-      const s = String(rawVal).trim();
-      if(s.startsWith('0')) return s;
-      if(/^\d{9}$/.test(s)) return '0'+s;
-      return s;
-    }
-
-    function isChecked(value) {
-        if (typeof value === 'boolean') return value;
-        if (typeof value === 'string') {
-            const s = value.toLowerCase().trim();
-            return s === '是' || s === 'true' || s === '1' || s === 'yes';
-        }
-        return false;
-    }
-
-    function formatFieldValueIfDate(fieldName, rawValue){
-      if(!rawValue && rawValue !== 0) return '';
-      const DATE_FIELDS = ['採購日期','到貨日期','取走日期','未接電話日期','通知日期','建立日期','creationDate','最後更新時間'];
-      if(DATE_FIELDS.includes(fieldName)){
-        const parts = String(rawValue).split(/[,;，\n]+/).map(s=>s.trim()).filter(Boolean).map(formatToYYYYMMDD);
-        // 手機版僅顯示最新一個日期以節省空間
-        if(parts.length > 1) return parts[parts.length-1] + `(${parts.length})`; 
-        return parts.join(', ');
-      }
-      if(String(rawValue).includes('T') || /\d{4}-\d{2}-\d{2}/.test(String(rawValue))) return formatToYYYYMMDD(rawValue);
-      return String(rawValue);
-    }
-
-    function formatToYYYYMMDD(singleVal){
-      if(!singleVal && singleVal !== 0) return '';
-      const s = String(singleVal).trim();
-      const m1 = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})$/);
-      if(m1) return `${m1[2]}/${m1[3]}`; // 簡化：只顯示 月/日
-      const isoLike = s.match(/\d{4}-\d{2}-\d{2}/);
-      if(isoLike){
-        const parsed = new Date(s);
-        if(!isNaN(parsed)){ return `${pad(parsed.getMonth()+1)}/${pad(parsed.getDate())}`; }
-      }
-      return s;
-    }
-
     function toDateOnly(val) {
       if (!val && val !== 0) return '';
       const s = String(val).trim();
@@ -891,643 +790,710 @@
       }
       return '';
     }
-    function parseMultiDateStringToArray(dateString) {
-        if (!dateString || typeof dateString !== 'string') return [];
-        return dateString.split(/[,;，\s]+/).map(s => toDateOnly(s)).filter(Boolean);
+    
+    function isChecked(value) {
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'string') {
+            const s = value.toLowerCase().trim();
+            return s === '是' || s === 'true' || s === '1' || s === 'yes';
+        }
+        return false;
     }
-    function getOrderTimestamp(order){
-      if(order && order.creationDate) return Date.parse(order.creationDate);
-      return 0;
+    
+    function showTopMessage(txt, isError=false){
+      if(!txt){ topMessage.classList.add('hidden'); topMessage.textContent=''; return; }
+      topMessage.textContent = txt;
+      topMessage.classList.remove('hidden');
+      topMessage.style.color = isError ? '#b91c1c' : '#065f46';
+    }
+    
+    function formatFieldValueIfDate(header, val) {
+       // Simple passthrough or formatting if needed for blacklist
+       if(!val) return '';
+       if (header.includes('日期') || header.includes('Date')) {
+           return formatDateShort(val);
+       }
+       return val;
+    }
+
+    // Tabs
+    function renderTabs() {
+      const STATUS_TABS = [
+        { key: 'all', label: '全部' },
+        { key: '未處理', label: '未處理' },
+        { key: '已採購', label: '已採購' },
+        { key: '已到貨', label: '已到貨' },
+        { key: '已通知', label: '已通知' },
+        { key: '未接', label: '未接' },
+        { key: '已取貨', label: '已取貨' }
+      ];
+      const container = document.getElementById('statusTabs');
+      container.innerHTML = STATUS_TABS.map(tab => `
+        <button class="tab-btn ${tab.key === currentFilter ? 'active' : ''}" 
+                onclick="setFilter('${tab.key}')">
+          ${tab.label}
+        </button>
+      `).join('');
+    }
+    window.setFilter = (key) => { currentFilter = key; renderTabs(); renderTable(); };
+
+    // Fetch Stores
+    async function fetchStores() {
+      try {
+        const resp = await fetch(`${SCRIPT_URL}?action=stores`);
+        const json = await resp.json();
+        const stores = json.stores || [];
+        storeSelect.innerHTML = '<option value="">請選擇店別</option>';
+        stores.forEach(s => {
+          if(s.name === '店名' || s.code === '店編號') return;
+          const opt = document.createElement('option');
+          opt.value = s.code; opt.textContent = s.name ? `${s.name}` : s.code;
+          storeSelect.appendChild(opt);
+        });
+        const saved = localStorage.getItem('selected_store');
+        if(saved && Array.from(storeSelect.options).some(o=>o.value===saved)) {
+          storeSelect.value = saved; updateStoreDisplay();
+        }
+        checkStoreLock();
+      } catch(e) { console.error(e); }
+    }
+    
+    storeSelect.addEventListener('change', () => {
+      localStorage.setItem('selected_store', storeSelect.value);
+      updateStoreDisplay(); checkStoreLock(); fetchOrders();
+    });
+    
+    function updateStoreDisplay() {
+      const text = storeSelect.options[storeSelect.selectedIndex]?.text;
+      if(text && storeSelect.value) { currentStoreBadge.textContent = text; currentStoreBadge.classList.remove('hidden'); }
+      else { currentStoreBadge.classList.add('hidden'); }
+    }
+
+    // Fetch Orders
+    async function fetchOrders() {
+      document.getElementById('dataLoader').classList.remove('hidden');
+      document.getElementById('data-table-body').innerHTML = '';
+      document.getElementById('noDataText').classList.add('hidden');
+      document.getElementById('data-message-box').classList.add('hidden'); // Clear previous errors
+      
+      const store = storeSelect.value;
+      const url = store ? `${SCRIPT_URL}?store=${encodeURIComponent(store)}` : SCRIPT_URL;
+      try {
+        const resp = await fetch(url);
+        const json = await resp.json();
+        const rows = json.rows || [];
+        allOrders = []; allLongTermOrders = [];
+        rows.forEach(r => {
+           if(r['固定/長期客訂'] === '是' || r['固定/長期客訂'] === true) allLongTermOrders.push(r);
+           else allOrders.push(r);
+        });
+        
+        const fixedHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        renderTableHeaders(fixedHeaders);
+        const longTermHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        renderLongTermTableHeaders(longTermHeaders);
+
+        renderTable(); 
+        renderLongTermTable();
+      } catch(e) { 
+        console.error(e); 
+        document.getElementById('data-message-box').classList.remove('hidden');
+        document.getElementById('data-message-box').textContent = '讀取失敗：' + e.message;
+      } finally { document.getElementById('dataLoader').classList.add('hidden'); }
     }
 
     function renderTableHeaders(displayHeaders){
+      if(!dataTableHeaders) return;
       dataTableHeaders.innerHTML = '';
-      const headers = ['狀態', ...displayHeaders];
+      const headers = ['狀態','刪除', ...displayHeaders];
       headers.forEach(h=>{
         const th = document.createElement('th');
+        th.className = 'sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap'; 
         th.textContent = h;
         dataTableHeaders.appendChild(th);
       });
     }
 
     function renderLongTermTableHeaders(displayHeaders){
+      if(!longTerm_dataTableHeaders) return;
       longTerm_dataTableHeaders.innerHTML = '';
-      const headers = ['狀態', ...displayHeaders];
+      const headers = ['狀態','刪除', ...displayHeaders];
       headers.forEach(h=>{
         const th = document.createElement('th');
+        th.className = 'sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap';
         th.textContent = h;
         longTerm_dataTableHeaders.appendChild(th);
       });
     }
 
-    function renderBlacklistTable(data, headers) {
-      blacklistDataTableHeaders.innerHTML = '';
-      blacklistDataTableBody.innerHTML = '';
-      if (!data || data.length === 0) {
-        blacklistNoDataText.classList.remove('hidden');
-        blacklistDataTableContainer.classList.add('hidden');
-        return;
-      }
-      blacklistDataTableContainer.classList.remove('hidden');
-      const opsTh = document.createElement('th');
-      opsTh.textContent = '操作';
-      blacklistDataTableHeaders.appendChild(opsTh);
-      headers.forEach(h => {
-        const th = document.createElement('th');
-        th.textContent = h;
-        blacklistDataTableHeaders.appendChild(th);
+    // Render Table
+    function renderTable() {
+      const tbody = document.getElementById('data-table-body');
+      const noData = document.getElementById('noDataText');
+      const tableContainer = document.getElementById('dataTableContainer');
+      tbody.innerHTML = '';
+      const term = document.getElementById('searchInput').value.trim().toLowerCase();
+      let filtered = allOrders.filter(o => {
+        const status = getStatus(o);
+        if (currentFilter !== 'all' && status.key !== currentFilter) return false;
+        if (!term) return true;
+        // Search Filter fix: search all values
+        return Object.values(o).some(val => String(val).toLowerCase().includes(term));
       });
+      filtered.sort((a,b) => {
+         const ta = new Date(a['最後更新時間'] || a['建立日期'] || 0).getTime();
+         const tb = new Date(b['最後更新時間'] || b['建立日期'] || 0).getTime();
+         return tb - ta;
+      });
+      
+      if(filtered.length === 0) { 
+        noData.classList.remove('hidden'); 
+        tableContainer.classList.add('hidden'); // Hide table when empty
+        return; 
+      }
+      else { 
+        noData.classList.add('hidden'); 
+        tableContainer.classList.remove('hidden'); // Show table when has data
+      }
 
-      data.forEach(row => {
+      filtered.forEach(order => {
         const tr = document.createElement('tr');
-        const opsTd = document.createElement('td');
-        const editBtn = document.createElement('button');
-        editBtn.className = 'text-blue-600 hover:text-blue-800 font-bold px-1';
-        editBtn.textContent = '編';
-        editBtn.onclick = () => openBlacklistEditModal(row);
-        opsTd.appendChild(editBtn);
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'text-red-600 hover:text-red-800 font-bold px-1 ml-1';
-        delBtn.textContent = '刪';
-        delBtn.onclick = () => deleteBlacklistRow(row['__row']);
-        opsTd.appendChild(delBtn);
-
-        tr.appendChild(opsTd);
-        headers.forEach(h => {
-          const td = document.createElement('td');
-          let val = row[h];
-          if (val && (h.includes('日期') || h.includes('Date'))) val = formatFieldValueIfDate(h, val);
-          td.textContent = val || '';
-          tr.appendChild(td);
-        });
-        blacklistDataTableBody.appendChild(tr);
-      });
-    }
-
-    function displayData(orders){
-      dataTableBody.innerHTML = '';
-      if(!orders || orders.length === 0){
-        noDataText.classList.remove('hidden');
-        dataTableContainer.classList.add('hidden');
-        noDataText.textContent = '無資料';
-        return;
-      }
-      noDataText.classList.add('hidden');
-      dataTableContainer.classList.remove('hidden');
-
-      orders.forEach(order=>{
-        const tr = document.createElement('tr'); 
-        tr.className = 'cursor-pointer hover:bg-blue-50'; // 整行可點擊
+        tr.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+        tr.onclick = (e) => { if(e.target.closest('button')) return; openEditModal(order); };
+        const status = getStatus(order);
         
-        // 點擊整行開啟編輯
-        tr.onclick = (e) => {
-            // 如果點到按鈕就不觸發整行事件
-            if(e.target.tagName === 'BUTTON' || e.target.parentElement.tagName === 'BUTTON') return;
-            openEditModal(order['__row']);
+        const productA = order['客訂商品A'] ? `[${order['客訂商品A']}]${order['A商品規格'] ? `(${order['A商品規格']})` : ''} ${order['A數量'] ? 'x' + order['A數量'] : ''}` : '';
+        const productB = order['客訂商品B'] ? `[${order['客訂商品B']}]${order['B商品規格'] ? `(${order['B商品規格']})` : ''} ${order['B數量'] ? 'x' + order['B數量'] : ''}` : '';
+        
+        const formatMulti = (val) => {
+            if(!val) return '';
+            const parts = String(val).split(/[,;，\s]+/).filter(Boolean);
+            if(parts.length === 0) return '';
+            return parts.map(d => {
+                const dobj = new Date(d);
+                if(isNaN(dobj.getTime())) return d;
+                return `${pad(dobj.getMonth()+1)}/${pad(dobj.getDate())}`;
+            }).join(', ');
         };
 
-        const status = getOrderStatus(order);
-        const statusTd = document.createElement('td');
-        statusTd.innerHTML = `<span class="status-tag ${status.class}">${status.text}</span>`;
-        tr.appendChild(statusTd);
+        const formatDateMMDD = (val) => {
+            if(!val) return '';
+            const d = new Date(val);
+            if(isNaN(d.getTime())) return String(val).substring(0, 10);
+            return `${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
+        }
 
-        tableHeadersOriginal.forEach(origHeader=>{
-          const td = document.createElement('td');
-          const rawVal = (order[origHeader] !== undefined && order[origHeader] !== null) ? order[origHeader] : '';
-          const isCustomerIdField = /客號|cust ?id/i.test(origHeader);
-
-          if (isCustomerIdField) {
-            td.textContent = String(rawVal);
-          } else if (origHeader === 'paid' || origHeader === '付清' || origHeader === '固定/長期客訂') {
-            td.textContent = isChecked(rawVal) ? '✔' : '';
-             if(isChecked(rawVal)) td.style.color = '#059669';
-          } else if(origHeader.includes('電話')){
-            td.textContent = formatPhone(rawVal);
-          } else {
-            td.textContent = formatFieldValueIfDate(origHeader, rawVal);
-          }
-          tr.appendChild(td);
-        });
-        dataTableBody.appendChild(tr);
-      });
-    }
-
-    function displayLongTermData(orders){
-      longTerm_dataTableBody.innerHTML = '';
-      if(!orders || orders.length === 0){
-        longTerm_noDataText.classList.remove('hidden');
-        longTerm_dataTableContainer.classList.add('hidden');
-        return;
-      }
-      longTerm_noDataText.classList.add('hidden');
-      longTerm_dataTableContainer.classList.remove('hidden');
-
-      orders.forEach(order=>{
-        const tr = document.createElement('tr');
-        tr.className = 'cursor-pointer hover:bg-blue-50';
-        tr.onclick = (e) => {
-            if(e.target.tagName === 'BUTTON') return;
-            openLongTermEditModal(order['__row']);
-        };
+        let dateDisplay = '';
+        if(order['採購日期']) dateDisplay += `<div class="text-xs text-blue-600">採購: ${formatDateMMDD(order['採購日期'])}</div>`;
+        if(order['到貨日期']) dateDisplay += `<div class="text-xs text-purple-600">到貨: ${formatDateMMDD(order['到貨日期'])}</div>`;
         
-        const status = getOrderStatus(order);
-        const statusTd = document.createElement('td');
-        statusTd.innerHTML = `<span class="status-tag ${status.class}">${status.text}</span>`;
-        tr.appendChild(statusTd);
+        if(order['未接電話日期']) dateDisplay += `<div class="text-xs text-red-500">未接: ${formatMulti(order['未接電話日期'])}</div>`;
+        if(order['通知日期']) dateDisplay += `<div class="text-xs text-orange-600">通知: ${formatMulti(order['通知日期'])}</div>`;
+        
+        if(order['取走日期']) dateDisplay += `<div class="text-xs text-green-600">取走: ${formatDateMMDD(order['取走日期'])}</div>`;
+        if(!dateDisplay) dateDisplay = `<div class="text-xs text-gray-400">${formatDateMMDD(order['建立日期'])}</div>`;
 
-        longTerm_tableHeadersOriginal.forEach(origHeader=>{
-          const td = document.createElement('td');
-          const rawVal = order[origHeader] || '';
-          const isCustomerIdField = /客號|cust ?id/i.test(origHeader);
+        let phoneDisplay = order['電話'] || order['連絡電話'] || '';
+        if (phoneDisplay) {
+             phoneDisplay = formatPhone(phoneDisplay);
+        }
 
-          if (isCustomerIdField) {
-            td.textContent = String(rawVal);
-          } else if (origHeader === 'paid' || origHeader === '付清' || origHeader === '固定/長期客訂') {
-            td.textContent = isChecked(rawVal) ? '✔' : '';
-          } else if(origHeader.includes('電話')){
-            td.textContent = formatPhone(rawVal);
-          } else {
-            td.textContent = formatFieldValueIfDate(origHeader, rawVal);
-          }
-          tr.appendChild(td);
-        });
-        longTerm_dataTableBody.appendChild(tr);
+        const isPaid = isChecked(order['付清'] || order['paid']);
+        const paidDisplay = isPaid ? '<span class="text-green-600 font-bold">是</span>' : '<span class="text-gray-400">否</span>';
+
+        const createdDate = formatDateMMDD(order['建立日期'] || order['creationDate'] || order['建立時間']);
+        const updatedDate = formatDateMMDD(order['最後更新時間']);
+
+        tr.innerHTML = `
+          <td><span class="status-badge ${status.class}">${status.label}</span></td>
+          <td class="text-center"> <!-- FIXED: Center using text-center -->
+             <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteRow(${order['__row']})">刪除</button>
+          </td>
+          <td data-label="客號">${order['客號'] || '-'}</td>
+          <td data-label="姓名" class="font-medium text-gray-900">${order['姓名'] || '未知'}</td>
+          <td data-label="手機號碼">${phoneDisplay}</td>
+          <td data-label="商品" class="mobile-full-width">
+             <div class="font-medium text-indigo-900">${productA}</div>
+             ${productB ? `<div class="font-medium text-indigo-900 mt-1">${productB}</div>` : ''}
+          </td>
+          <td data-label="進度" class="text-gray-500">
+             ${dateDisplay || '-'}
+          </td>
+          <td data-label="付清">${paidDisplay}</td>
+          <td data-label="建立日期" class="text-xs text-gray-400">${createdDate}</td>
+          <td data-label="最後更新" class="text-xs text-gray-400">${updatedDate}</td>
+        `;
+        
+        const delBtn = tr.querySelector('button[onclick^="deleteRow"]');
+        if(delBtn) {
+            delBtn.onclick = (e) => { e.stopPropagation(); if(confirm('刪除?')) deleteRow(order['__row']); };
+            delBtn.removeAttribute('onclick');
+        }
+
+        tbody.appendChild(tr);
       });
-    }
-
-    function renderStatusTabs(containerEl, currentKey, onChange){
-      containerEl.innerHTML = '';
-      const STATUS_KEYS = [
-        { key: 'all', label: '全部' },
-        { key: '未處理', label: '未處理' },
-        { key: '已採購', label: '已採購' },
-        { key: '已到貨', label: '已到貨' },
-        { key: '未接', label: '未接' },
-        { key: '已通知', label: '已通知' },
-        { key: '已取貨', label: '已取貨' }
-      ];
-      STATUS_KEYS.forEach(s=>{
-        const btn = document.createElement('div');
-        btn.className = 'status-tab' + (s.key === currentKey ? ' active' : '');
-        if(s.key === 'all') btn.classList.add('all');
-        btn.textContent = s.label;
-        btn.addEventListener('click', ()=>{ onChange(s.key); });
-        containerEl.appendChild(btn);
-      });
-    }
-
-    // --- Filter Functions ---
-    function filterAndDisplayData(){
-      const term = (searchInput.value || '').toLowerCase().trim();
-      const searchDigits = digitsOnly(term);
-      let filtered = allOrders.slice();
-      if(currentStatusFilter && currentStatusFilter !== 'all'){
-        filtered = filtered.filter(order => {
-          const st = getOrderStatus(order).text;
-          return st === currentStatusFilter;
-        });
-      }
-      if(!term){ hideDataMessage(); displayData(filtered); return; }
-      const result = filtered.filter(order=>{
-        return Object.values(order).some(val => String(val).toLowerCase().includes(term));
-      });
-      if(result.length === 0){ displayData([]); showDataMessage('info', '找不到資料'); }
-      else { hideDataMessage(); displayData(result); }
-    }
-
-    function filterAndDisplayLongTermData(){
-      const term = (longTerm_searchInput.value || '').toLowerCase().trim();
-      let filtered = allLongTermOrders.slice();
-      if(currentLTStatusFilter && currentLTStatusFilter !== 'all'){
-        filtered = filtered.filter(order => {
-          const st = getOrderStatus(order).text;
-          return st === currentLTStatusFilter;
-        });
-      }
-      if(!term){ hideDataMessage(true); displayLongTermData(filtered); return; }
-      const result = filtered.filter(order=>{
-        return Object.values(order).some(val => String(val).toLowerCase().includes(term));
-      });
-      if(result.length === 0){ displayLongTermData([]); showDataMessage('info', '找不到資料', true); }
-      else { hideDataMessage(true); displayLongTermData(result); }
     }
     
-    function filterBlacklist() {
-      const term = (blacklistSearchInput.value || '').toLowerCase().trim();
-      if (!term) { fetchBlacklistData(); return; }
-      const filtered = allBlacklistData.filter(row => Object.values(row).some(val => String(val).toLowerCase().includes(term)));
-      renderBlacklistTable(filtered, ['客號','姓名','電話','原因']); // 簡化欄位
+    function renderLongTermTable() {
+      const tbody = document.getElementById('longTerm_data-table-body');
+      const noData = document.getElementById('longTerm_noDataText');
+      const tableContainer = document.getElementById('longTerm_dataTableContainer');
+      tbody.innerHTML = '';
+      const term = document.getElementById('longTerm_searchInput').value.trim().toLowerCase();
+      let filtered = allLongTermOrders.filter(o => {
+        if (!term) return true;
+        // Search Filter fix: search all values
+        return Object.values(o).some(val => String(val).toLowerCase().includes(term));
+      });
+      
+      if(filtered.length === 0) { 
+        noData.classList.remove('hidden'); 
+        tableContainer.classList.add('hidden'); // Hide table when empty
+        return; 
+      }
+      else { 
+        noData.classList.add('hidden'); 
+        tableContainer.classList.remove('hidden'); // Show table when has data
+      }
+      
+      filtered.forEach(order => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+        tr.onclick = (e) => { if(e.target.closest('button')) return; openLongTermEditModal(order); };
+        const status = getStatus(order);
+        
+        const productA = order['客訂商品A'] ? `[${order['客訂商品A']}]${order['A商品規格'] ? `(${order['A商品規格']})` : ''} ${order['A數量'] ? 'x' + order['A數量'] : ''}` : '';
+        const productB = order['客訂商品B'] ? `[${order['客訂商品B']}]${order['B商品規格'] ? `(${order['B商品規格']})` : ''} ${order['B數量'] ? 'x' + order['B數量'] : ''}` : '';
+
+        const formatMulti = (val) => {
+            if(!val) return '';
+            const parts = String(val).split(/[,;，\s]+/).filter(Boolean);
+            if(parts.length === 0) return '';
+            return parts.map(d => {
+                const dobj = new Date(d);
+                if(isNaN(dobj.getTime())) return d;
+                return `${pad(dobj.getMonth()+1)}/${pad(dobj.getDate())}`;
+            }).join(', ');
+        };
+
+        const formatDateMMDD = (val) => {
+            if(!val) return '';
+            const d = new Date(val);
+            if(isNaN(d.getTime())) return String(val).substring(0, 10);
+            return `${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
+        }
+
+        let dateDisplay = '';
+        if(order['採購日期']) dateDisplay += `<div class="text-xs text-blue-600">採購: ${formatMulti(order['採購日期'])}</div>`;
+        if(order['到貨日期']) dateDisplay += `<div class="text-xs text-purple-600">到貨: ${formatMulti(order['到貨日期'])}</div>`;
+        
+        if(order['未接電話日期']) dateDisplay += `<div class="text-xs text-red-500">未接: ${formatMulti(order['未接電話日期'])}</div>`;
+        if(order['通知日期']) dateDisplay += `<div class="text-xs text-orange-600">通知: ${formatMulti(order['通知日期'])}</div>`;
+        
+        if(order['取走日期']) dateDisplay += `<div class="text-xs text-green-600">取走: ${formatMulti(order['取走日期'])}</div>`;
+        
+        let phoneDisplay = order['電話'] || order['連絡電話'] || '';
+        if (phoneDisplay) {
+             phoneDisplay = formatPhone(phoneDisplay);
+        }
+
+        const isPaid = isChecked(order['付清'] || order['paid']);
+        const paidDisplay = isPaid ? '<span class="text-green-600 font-bold">是</span>' : '<span class="text-gray-400">否</span>';
+        const createdDate = formatDateMMDD(order['建立日期'] || order['creationDate'] || order['建立時間']);
+        const updatedDate = formatDateMMDD(order['最後更新時間']);
+
+        tr.innerHTML = `
+          <td><span class="status-badge ${status.class}">${status.label}</span></td>
+          <td class="text-center"> <!-- FIXED: Center using text-center -->
+             <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteRow(${order['__row']})">刪除</button>
+          </td>
+          <td data-label="客號">${order['客號'] || '-'}</td>
+          <td data-label="姓名" class="font-medium text-gray-900">${order['姓名'] || '未知'}</td>
+          <td data-label="手機號碼">${phoneDisplay}</td>
+          <td data-label="商品" class="mobile-full-width">
+             <div class="font-medium text-blue-900">${productA}</div>
+             ${productB ? `<div class="font-medium text-blue-900 mt-1">${productB}</div>` : ''}
+          </td>
+          <td data-label="進度" class="text-gray-500">${dateDisplay || '-'}</td>
+          <td data-label="付清">${paidDisplay}</td>
+          <td data-label="建立日期" class="text-xs text-gray-400">${createdDate}</td>
+          <td data-label="最後更新" class="text-xs text-gray-400">${updatedDate}</td>
+        `;
+
+        const delBtn = tr.querySelector('button[onclick^="deleteRow"]');
+        if(delBtn) {
+            delBtn.onclick = (e) => { e.stopPropagation(); if(confirm('刪除?')) deleteRow(order['__row']); };
+            delBtn.removeAttribute('onclick');
+        }
+
+        tbody.appendChild(tr);
+      });
     }
 
-    function setMainStatusFilter(key){
-      currentStatusFilter = key;
-      renderStatusTabs(statusTabsEl, currentStatusFilter, setMainStatusFilter);
-      filterAndDisplayData();
+    function getStatus(order) {
+       if(order['取走日期']) return { key: '已取貨', label: '已取貨', class: 'closed' };
+       if(order['通知日期']) return { key: '已通知', label: '已通知', class: 'notified' };
+       if(order['未接電話日期']) return { key: '未接', label: '未接', class: 'missed' };
+       if(order['到貨日期']) return { key: '已到貨', label: '已到貨', class: 'arrived' };
+       if(order['採購日期']) return { key: '已採購', label: '已採購', class: 'purchase' };
+       return { key: '未處理', label: '未處理', class: 'pending' };
     }
-    function setLTStatusFilter(key){
-      currentLTStatusFilter = key;
-      renderStatusTabs(ltStatusTabsEl, currentLTStatusFilter, setLTStatusFilter);
-      filterAndDisplayLongTermData();
+    function formatPhone(rawVal){
+      if(rawVal===undefined || rawVal===null) return '';
+      const s = String(rawVal).trim();
+      if(s.startsWith('0')) return s;
+      if(/^\d{9}$/.test(s)) return '0'+s;
+      return s;
+    }
+    function formatDateShort(dateStr) {
+      if(!dateStr) return '';
+      const parts = String(dateStr).split(/[,;，\s]+/);
+      const last = parts[parts.length-1]; 
+      const d = new Date(last);
+      if(isNaN(d.getTime())) return `${pad(d.getMonth()+1)}/${pad(d.getDate())}`; // Fallback if parse fails but logic was tried
+      return `${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
     }
 
-    // --- API Calls ---
+    // Modal Helpers
+    const editModal = document.getElementById('editModalBackdrop');
+    const longTermEditModal = document.getElementById('longTerm_editModalBackdrop');
+    const blacklistEditModal = document.getElementById('blacklist_editModalBackdrop');
+    
+    function setInputDate(id, val) {
+       const el = document.getElementById(id);
+       if(!val) { el.value = ''; return; }
+       const parts = String(val).split(/[,;，\s]+/);
+       const d = new Date(parts[parts.length-1]);
+       if(!isNaN(d)) { el.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+    }
+
+    function openEditModal(order) {
+       document.getElementById('editRowIndex').value = order['__row'];
+       document.getElementById('editCustomerID').value = order['客號']||'';
+       document.getElementById('editCustomerName').value = order['姓名']||'';
+       document.getElementById('editPhone').value = order['電話']||order['連絡電話']||'';
+       document.getElementById('editProductAName').value = order['客訂商品A']||'';
+       document.getElementById('editProductASpec').value = order['A商品規格']||'';
+       document.getElementById('editProductAQty').value = order['A數量']||'';
+       document.getElementById('editProductBName').value = order['客訂商品B']||'';
+       document.getElementById('editProductBSpec').value = order['B商品規格']||'';
+       document.getElementById('editProductBQty').value = order['B數量']||'';
+       document.getElementById('editPaid').checked = (order['paid'] === '是' || order['paid'] === true || order['付清'] === '是');
+       document.getElementById('editNotes').value = order['備註']||'';
+       setInputDate('editPurchaseDate', order['採購日期']);
+       setInputDate('editArrivalDate', order['到貨日期']);
+       setInputDate('editPickupDate', order['取走日期']);
+       
+       // Populate Tags for normal edit modal
+       try {
+         const missed = parseMultiDateStringToArray(order['未接電話日期']);
+         const notify = parseMultiDateStringToArray(order['通知日期']);
+         editMissedCtrl.setItems(missed);
+         editNotifyCtrl.setItems(notify);
+       } catch(e) { console.warn(e); }
+
+       editModal.classList.remove('hidden');
+    }
+    
+    function openLongTermEditModal(order) {
+       document.getElementById('longTerm_editRowIndex').value = order['__row'];
+       document.getElementById('longTerm_editCustomerID').value = order['客號']||'';
+       document.getElementById('longTerm_editCustomerName').value = order['姓名']||'';
+       document.getElementById('longTerm_editPhone').value = order['電話']||order['連絡電話']||'';
+       document.getElementById('longTerm_editProductAName').value = order['客訂商品A']||'';
+       document.getElementById('longTerm_editProductASpec').value = order['A商品規格']||'';
+       document.getElementById('longTerm_editProductAQty').value = order['A數量']||'';
+       document.getElementById('longTerm_editProductBName').value = order['客訂商品B']||'';
+       document.getElementById('longTerm_editProductBSpec').value = order['B商品規格']||'';
+       document.getElementById('longTerm_editProductBQty').value = order['B數量']||'';
+       document.getElementById('longTerm_editPaid').checked = (order['paid'] === '是' || order['paid'] === true || order['付清'] === '是');
+       document.getElementById('longTerm_editStoreTransfer').value = order['分店調撥'] || '';
+       document.getElementById('longTerm_editNotes').value = order['備註'] || order['說明'] || '';
+       
+       try{
+        const purchase = parseMultiDateStringToArray(order['採購日期']);
+        const arrival = parseMultiDateStringToArray(order['到貨日期']);
+        const pickup = parseMultiDateStringToArray(order['取走日期']);
+        const missed = parseMultiDateStringToArray(order['未接電話日期']);
+        const notify = parseMultiDateStringToArray(order['通知日期']);
+        longTerm_editPurchaseCtrl.setItems(purchase);
+        longTerm_editArrivalCtrl.setItems(arrival);
+        longTerm_editPickupCtrl.setItems(pickup);
+        longTerm_editMissedCtrl.setItems(missed);
+        longTerm_editNotifyCtrl.setItems(notify);
+      }catch(e){ console.warn(e); }
+
+       longTermEditModal.classList.remove('hidden');
+    }
+    
+    function openBlacklistEditModal(row) {
+       document.getElementById('blacklist_editRowIndex').value = row['__row'];
+       const data = resolveBlacklistRowData(row);
+       document.getElementById('bl_edit_phone').value = data.phone;
+       document.getElementById('bl_edit_name').value = data.name;
+       document.getElementById('bl_edit_custID').value = data.id;
+       document.getElementById('bl_edit_reason').value = data.reason;
+       // ... note handling ...
+       // If backend returns '備註' or 'Note', map it
+       let note = row['備註'] || row['Note'] || '';
+       document.getElementById('bl_edit_notes').value = note;
+       
+       blacklistEditModal.classList.remove('hidden');
+    }
+
+    document.getElementById('closeEditModal').addEventListener('click', () => editModal.classList.add('hidden'));
+    document.getElementById('longTerm_closeEditModal').addEventListener('click', () => longTermEditModal.classList.add('hidden'));
+    document.getElementById('blacklist_closeEditModal').addEventListener('click', () => blacklistEditModal.classList.add('hidden'));
+    
+    // Forms
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const store = storeSelect.value;
+      if(!store) { alert('請選擇店別'); return; }
+      submitButton.disabled = true; submitButton.textContent = '送出中...';
+      try {
+        const fd = new FormData(form);
+        fd.append('action', 'append');
+        fd.append('store', store);
+        await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+        alert('訂單已送出'); form.reset(); fetchOrders();
+      } catch(err) { alert('失敗: '+err.message); } finally { submitButton.disabled = false; submitButton.textContent = '送出訂單'; }
+    });
+    
+    // 監聽電話輸入 (黑名單檢查)
+    const phoneInput = document.getElementById('phone');
+    const phoneWarning = document.getElementById('phone-warning');
+    phoneInput.addEventListener('input', function() {
+      const inputVal = this.value.trim().replace(/\D/g, ''); 
+      const inputNoZero = inputVal.replace(/^0+/, ''); 
+      phoneWarning.classList.add('hidden');
+      this.style.borderColor = ''; this.style.backgroundColor = '';
+      if (inputNoZero.length < 6) return;
+      
+      const found = allBlacklistData.find(row => {
+          const data = resolveBlacklistRowData(row);
+          const rawPhone = data.phone;
+          const rowPhoneNoZero = String(rawPhone).replace(/\D/g, '').replace(/^0+/, '');
+          return rowPhoneNoZero && rowPhoneNoZero === inputNoZero;
+      });
+
+      if (found) {
+           const data = resolveBlacklistRowData(found);
+           phoneWarning.classList.remove('hidden');
+           phoneWarning.textContent = `⚠️ 此號碼在黑名單中！(${data.reason})`;
+           this.style.borderColor = 'red'; this.style.backgroundColor = '#fef2f2';
+      }
+    });
+
+    // Store Lock
+    async function checkStoreLock() {
+      const store = storeSelect.value;
+      if(!store) return;
+      // 實際可呼叫後端 API
+    }
+    storeLockCheckbox.addEventListener('change', async () => {
+      const store = storeSelect.value;
+      const locked = storeLockCheckbox.checked;
+      
+      if(!store){ 
+          showTopMessage('請先選擇店別', true); 
+          storeLockCheckbox.checked = false; 
+          return; 
+      }
+
+      // Optimistic UI update
+      if(locked){
+        storeSelect.classList.add('select-disabled');
+        storeSelect.disabled = true;
+      } else {
+        storeSelect.classList.remove('select-disabled');
+        storeSelect.disabled = false;
+      }
+      showTopMessage(locked ? '店別已鎖定' : '店別已解鎖', false);
+
+      // Perform backend update
+      const ok = await setStoreLockValue(store, locked);
+      if(!ok){
+        showTopMessage('設定店別鎖定失敗，已還原狀態', true);
+        // Revert UI
+        storeLockCheckbox.checked = !locked;
+        if(!locked){ // reverted to locked
+            storeSelect.classList.add('select-disabled');
+            storeSelect.disabled = true;
+        } else { // reverted to unlocked
+            storeSelect.classList.remove('select-disabled');
+            storeSelect.disabled = false;
+        }
+      }
+    });
+    
+    document.getElementById('refreshStoresBtn').addEventListener('click', async()=>{ await fetch(SCRIPT_URL,{method:'POST',body:new FormData().append('action','create_store_sheets')}); await fetchStores(); });
+    
+    // Blacklist
     async function fetchBlacklistData() {
-      blacklistDataLoader.classList.remove('hidden');
-      blacklistDataTableContainer.classList.add('hidden');
+      document.getElementById('blacklist_dataLoader').classList.remove('hidden');
       try {
         const resp = await fetch(`${SCRIPT_URL}?action=blacklist`);
         const json = await resp.json();
-        if (json.result === 'success') {
-          allBlacklistData = json.rows || [];
-          renderBlacklistTable(allBlacklistData, ['客號','姓名','電話','原因','日期']); 
-        } else {
-          blacklistNoDataText.classList.remove('hidden');
-        }
-      } catch (e) { console.error(e); } finally { blacklistDataLoader.classList.add('hidden'); }
+        allBlacklistData = json.rows || [];
+        renderBlacklistTable();
+      } catch(e) { console.error(e); } finally { document.getElementById('blacklist_dataLoader').classList.add('hidden'); }
     }
+    
+    // Helper to resolve blacklist row data flexibly
+    function resolveBlacklistRowData(row) {
+      const keys = Object.keys(row);
+      const findKey = (candidates) => {
+        for (const c of candidates) {
+          if (row[c] !== undefined) return c;
+        }
+        for (const c of candidates) {
+          const found = keys.find(k => k.includes(c));
+          if (found) return found;
+        }
+        return null;
+      };
 
-    async function deleteRow(rowValue, btnElement){
-      if(!rowValue) return;
-      if(!confirm("確定刪除?")) return;
-      const store = storeSelect.value || '';
+      const idKey = findKey(['客號', 'Cust', 'ID', '編號']);
+      const nameKey = findKey(['姓名', 'Name', '顧客']);
+      const phoneKey = findKey(['電話', 'Phone', 'Mobile', '手機', '連絡']);
+      const reasonKey = findKey(['原因', 'Reason', '事由', '備註', '說明']);
+      const dateKey = findKey(['日期', 'Date', 'Time']);
+
+      return {
+        id: idKey ? row[idKey] : '-',
+        name: nameKey ? row[nameKey] : '未知',
+        phone: phoneKey ? row[phoneKey] : '',
+        reason: reasonKey ? row[reasonKey] : '',
+        date: dateKey ? row[dateKey] : ''
+      };
+    }
+    
+    function renderBlacklistTable() {
+      const tbody = document.getElementById('blacklist_data-table-body');
+      const noData = document.getElementById('blacklist_noDataText');
+      const tableContainer = document.getElementById('blacklist_dataTableContainer');
+      tbody.innerHTML = '';
+      const term = document.getElementById('blacklist_searchInput').value.trim().toLowerCase();
+      
+      const filtered = allBlacklistData.filter(row => {
+         if(!term) return true;
+         // Search all values in row
+         return Object.values(row).some(val => String(val).toLowerCase().includes(term));
+      });
+      
+      if(filtered.length === 0) { 
+        noData.classList.remove('hidden'); 
+        tableContainer.classList.add('hidden'); 
+        return; 
+      }
+      else { 
+        noData.classList.add('hidden'); 
+        tableContainer.classList.remove('hidden'); 
+      }
+      
+      filtered.forEach(row => {
+         const tr = document.createElement('tr');
+         tr.className = 'hover:bg-red-50 cursor-pointer';
+         tr.onclick = (e) => { if(e.target.closest('button')) return; openBlacklistEditModal(row); };
+         
+         const data = resolveBlacklistRowData(row);
+         const dateVal = formatFieldValueIfDate('日期', data.date);
+
+         tr.innerHTML = `
+           <td class="status-badge missed">黑名單</td>
+           <td class="text-center"> <!-- FIXED: Center delete button -->
+               <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteBlacklistRow(${row['__row']})">刪除</button>
+           </td>
+           <td data-label="客號">${data.id}</td>
+           <td data-label="姓名">${data.name}</td>
+           <td data-label="電話">${data.phone}</td>
+           <td data-label="原因" class="text-red-600">${data.reason}</td>
+           <td data-label="日期">${dateVal}</td>
+         `;
+         
+         const delBtn = tr.querySelector('button[onclick^="deleteBlacklistRow"]');
+         if(delBtn) {
+            delBtn.onclick = (e) => { e.stopPropagation(); deleteBlacklistRow(row['__row']); };
+            delBtn.removeAttribute('onclick');
+         }
+
+         tbody.appendChild(tr);
+      });
+    }
+    
+    async function deleteBlacklistRow(rowIndex) {
+      if (!confirm('確定要刪除這筆黑名單資料嗎？此動作無法復原。')) return;
       try {
         const fd = new FormData();
         fd.append('action', 'delete');
-        fd.append('row', rowValue);
-        if(store) fd.append('store', store);
-        const resp = await fetch(SCRIPT_URL, { method:'POST', body: fd });
+        fd.append('row', rowIndex);
+        fd.append('targetSheet', 'blacklist'); // Ensure 'blacklist' matches backend expectation
+        const resp = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
         const json = await resp.json();
-        if(json.result === 'success'){
-          closeModal(); longTerm_closeModal();
-          fetchOrderData();
-        } else { alert('刪除失敗'); }
-      } catch(err){ alert('錯誤: '+err.message); }
-    }
-    
-    // 靜默刪除 (用於批次)
-    async function deleteRowSilent(rowValue) {
-      const store = storeSelect.value || '';
-      const fd = new FormData(); fd.append('action', 'delete'); fd.append('row', rowValue); if(store) fd.append('store', store);
-      const resp = await fetch(SCRIPT_URL, { method:'POST', body: fd });
-      const json = await resp.json();
-      if(json.result !== 'success') throw new Error(json.error);
-    }
-
-    async function fetchStores(){
-      showTopMessage('讀取中...');
-      try{
-        const resp = await fetch(`${SCRIPT_URL}?action=stores`);
-        const json = await resp.json();
-        let stores = json.stores || [];
-        populateStoreSelect(stores);
-        showTopMessage('', false);
-      }catch(err){ showTopMessage('讀取分店失敗', true); }
-    }
-
-    function populateStoreSelect(stores){
-      const prev = localStorage.getItem('selected_store');
-      storeSelect.innerHTML = '';
-      const opt = document.createElement('option'); opt.value = ''; opt.textContent = '選擇店別'; storeSelect.appendChild(opt);
-      stores.forEach(s => {
-        // 過濾掉標題列 (店編號、店名、店名稱等)
-        if (s.code === '店編號' || s.name === '店名' || s.name === '店名稱') return;
-        
-        const o = document.createElement('option');
-        o.value = s.code; o.textContent = s.name ? `${s.name}` : s.code;
-        storeSelect.appendChild(o);
-      });
-      if(prev) { const found = Array.from(storeSelect.options).some(o => o.value === prev); if(found) storeSelect.value = prev; }
-      updateStoreLockUI();
-      if (storeSelect.options[storeSelect.selectedIndex]) {
-          currentStoreDisplay.textContent = storeSelect.options[storeSelect.selectedIndex].text;
+        if (json.result === 'success') {
+          alert('刪除成功');
+          fetchBlacklistData();
+        } else {
+          alert('刪除失敗：' + json.error);
+        }
+      } catch(e) {
+        alert('刪除失敗：' + e.message);
       }
     }
 
-    async function refreshStoresAndCreateMissing(){
-      showTopMessage('檢查分店...');
-      try{
-        const fd = new FormData(); fd.append('action','create_store_sheets');
-        await fetch(SCRIPT_URL, { method:'POST', body: fd });
-        fetchStores();
-      }catch(err){ showTopMessage('失敗', true); }
-    }
+    document.getElementById('blacklist_searchButton').addEventListener('click', renderBlacklistTable);
+    document.getElementById('blacklist_searchInput').addEventListener('input', renderBlacklistTable);
+    document.getElementById('longTerm_searchButton').addEventListener('click', renderLongTermTable);
+    document.getElementById('longTerm_searchInput').addEventListener('input', renderLongTermTable);
+    document.getElementById('searchButton').addEventListener('click', renderTable);
+    document.getElementById('searchInput').addEventListener('input', renderTable);
 
+    document.getElementById('blacklist_addButton').addEventListener('click', () => { document.getElementById('blacklist_addModalBackdrop').classList.remove('hidden'); });
+    document.getElementById('blacklist_closeAddModal').addEventListener('click', () => document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'));
+    
+    document.getElementById('blacklist_addForm').addEventListener('submit', async(e)=>{
+       e.preventDefault();
+       try { const fd = new FormData(e.target); fd.append('action', 'add_blacklist'); await fetch(SCRIPT_URL, {method:'POST', body:fd}); alert('新增成功'); e.target.reset(); document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'); fetchBlacklistData(); } catch(e) { alert('失敗'); }
+    });
+    
+    // Modal Submits
+    document.getElementById('editForm').addEventListener('submit', async(e)=>{ e.preventDefault(); const fd=new FormData(e.target); fd.append('action','update'); fd.append('store',storeSelect.value); await fetch(SCRIPT_URL,{method:'POST',body:fd}); alert('更新成功'); editModal.classList.add('hidden'); fetchOrders(); });
+    document.getElementById('longTerm_editForm').addEventListener('submit', async(e)=>{ e.preventDefault(); const fd=new FormData(e.target); fd.append('action','update'); fd.append('store',storeSelect.value); await fetch(SCRIPT_URL,{method:'POST',body:fd}); alert('更新成功'); longTermEditModal.classList.add('hidden'); fetchOrders(); });
+    document.getElementById('blacklist_editForm').addEventListener('submit', async(e)=>{ e.preventDefault(); const fd=new FormData(e.target); fd.append('action','update'); fd.append('targetSheet','blacklist'); await fetch(SCRIPT_URL,{method:'POST',body:fd}); alert('更新成功'); blacklistEditModal.classList.add('hidden'); fetchBlacklistData(); });
+    
+    // Deletes
+    document.getElementById('deleteEdit').addEventListener('click', ()=>{ if(confirm('刪除?')) deleteRow(document.getElementById('editRowIndex').value); });
+    document.getElementById('longTerm_deleteEdit').addEventListener('click', ()=>{ if(confirm('刪除?')) deleteRow(document.getElementById('longTerm_editRowIndex').value); });
+    async function deleteRow(idx) { const fd=new FormData(); fd.append('action','delete'); fd.append('row',idx); fd.append('store',storeSelect.value); await fetch(SCRIPT_URL,{method:'POST',body:fd}); alert('已刪除'); editModal.classList.add('hidden'); longTermEditModal.classList.add('hidden'); fetchOrders(); }
+
+    document.querySelectorAll('[data-target]').forEach(btn => {
+      btn.addEventListener('click', () => { document.getElementById(btn.dataset.target).value = todayLocalForInput(); });
+    });
+    
     async function getStoreLockValue(store){
       if(!store) return false;
       try{
         const resp = await fetch(`${SCRIPT_URL}?action=get_store_lock&store=${encodeURIComponent(store)}`);
         const json = await resp.json();
-        return json.locked === '1';
-      }catch(e){ return false; }
+        if(json && json.result === 'success') return json.locked === '1' || json.locked === true;
+      }catch(err){ console.warn('getStoreLockValue error', err); }
+      return false;
     }
 
     async function setStoreLockValue(store, locked){
+      if(!store) return;
       try{
-        const fd = new FormData(); fd.append('action','set_store_lock'); fd.append('store', store); fd.append('locked', locked ? '1' : '0');
+        const fd = new FormData();
+        fd.append('action','set_store_lock');
+        fd.append('store', store);
+        fd.append('locked', locked ? '1' : '0');
         const resp = await fetch(SCRIPT_URL, { method:'POST', body: fd });
-        return (await resp.json()).result === 'success';
-      }catch(e){ return false; }
-    }
-
-    async function updateStoreLockUI(){
-      const store = storeSelect.value;
-      if(!store){ storeLockCheckbox.disabled = true; storeSelect.disabled = false; return; }
-      storeLockCheckbox.disabled = false;
-      const locked = await getStoreLockValue(store);
-      storeLockCheckbox.checked = locked;
-      storeSelect.disabled = locked;
-      if(locked) storeSelect.classList.add('bg-gray-100'); else storeSelect.classList.remove('bg-gray-100');
-    }
-
-    async function fetchOrderData(){
-      dataLoader.classList.remove('hidden'); longTerm_dataLoader.classList.remove('hidden');
-      dataTableContainer.classList.add('hidden'); longTerm_dataTableContainer.classList.add('hidden');
-      noDataText.classList.add('hidden'); longTerm_noDataText.classList.add('hidden');
-      const store = storeSelect.value || '';
-      try{
-        const url = store ? `${SCRIPT_URL}?store=${encodeURIComponent(store)}` : SCRIPT_URL;
-        const resp = await fetch(url);
-        const data = await resp.json();
-        const allData = data.rows || [];
-        tableHeadersOriginal = data.headers || [];
-        longTerm_tableHeadersOriginal = [...tableHeadersOriginal];
-
-        allOrders = []; allLongTermOrders = [];
-        allData.forEach(order=>{
-          if(isChecked(order['固定/長期客訂'])) allLongTermOrders.push(order);
-          else allOrders.push(order);
-        });
-
-        // Sort by Time desc
-        const sorter = (a,b) => getOrderTimestamp(b) - getOrderTimestamp(a);
-        allOrders.sort(sorter);
-        allLongTermOrders.sort(sorter);
-
-        renderStatusTabs(statusTabsEl, currentStatusFilter, setMainStatusFilter);
-        renderStatusTabs(ltStatusTabsEl, currentLTStatusFilter, setLTStatusFilter);
-
-        const displayHeaders = tableHeadersOriginal.map(h => headerNameMap[h] || h);
-        renderTableHeaders(displayHeaders);
-        renderLongTermTableHeaders(displayHeaders);
-
-        filterAndDisplayData();
-        filterAndDisplayLongTermData();
-      }catch(err){ console.error(err); }finally{
-        dataLoader.classList.add('hidden'); longTerm_dataLoader.classList.add('hidden');
-      }
-    }
-
-    function setupTagControls(addBtn, stampBtn, inputEl, tagsContainer, hiddenInput){
-      let items = [];
-      const render = () => {
-        tagsContainer.innerHTML = '';
-        items.forEach(d => {
-           const span = document.createElement('span');
-           span.className = 'tag';
-           span.innerHTML = `${d}<span class="remove" data-date="${d}">&times;</span>`;
-           tagsContainer.appendChild(span);
-        });
-        hiddenInput.value = items.join(', ');
-      };
-      addBtn && addBtn.addEventListener('click', ()=>{
-        if(inputEl.value && !items.includes(inputEl.value)){ items.push(inputEl.value); items.sort(); inputEl.value=''; render(); }
-      });
-      stampBtn && stampBtn.addEventListener('click', ()=>{
-        const v = todayLocalForInput(); if(!items.includes(v)){ items.push(v); items.sort(); render(); }
-      });
-      tagsContainer.addEventListener('click', (e)=>{
-        if(e.target.classList.contains('remove')){ items = items.filter(x=>x!==e.target.dataset.date); render(); }
-      });
-      return { setItems(arr){ items = (arr||[]).filter(Boolean); items.sort(); render(); }, getItems(){ return items; } };
-    }
-
-    const editMissedCtrl = setupTagControls(editAddMissed, editStampMissed, editMissedInput, editMissedTags, editMissedHidden);
-    const editNotifyCtrl = setupTagControls(editAddNotify, editStampNotify, editNotifyInput, editNotifyTags, editNotifyHidden);
-
-    const longTerm_editPurchaseCtrl = setupTagControls(longTerm_editPurchaseCtrl_el.addBtn, longTerm_editPurchaseCtrl_el.stampBtn, longTerm_editPurchaseCtrl_el.inputEl, longTerm_editPurchaseCtrl_el.tagsContainer, longTerm_editPurchaseCtrl_el.hiddenInput);
-    const longTerm_editArrivalCtrl = setupTagControls(longTerm_editArrivalCtrl_el.addBtn, longTerm_editArrivalCtrl_el.stampBtn, longTerm_editArrivalCtrl_el.inputEl, longTerm_editArrivalCtrl_el.tagsContainer, longTerm_editArrivalCtrl_el.hiddenInput);
-    const longTerm_editPickupCtrl = setupTagControls(longTerm_editPickupCtrl_el.addBtn, longTerm_editPickupCtrl_el.stampBtn, longTerm_editPickupCtrl_el.inputEl, longTerm_editPickupCtrl_el.tagsContainer, longTerm_editPickupCtrl_el.hiddenInput);
-    const longTerm_editMissedCtrl = setupTagControls(longTerm_editMissedCtrl_el.addBtn, longTerm_editMissedCtrl_el.stampBtn, longTerm_editMissedCtrl_el.inputEl, longTerm_editMissedCtrl_el.tagsContainer, longTerm_editMissedCtrl_el.hiddenInput);
-    const longTerm_editNotifyCtrl = setupTagControls(longTerm_editNotifyCtrl_el.addBtn, longTerm_editNotifyCtrl_el.stampBtn, longTerm_editNotifyCtrl_el.inputEl, longTerm_editNotifyCtrl_el.tagsContainer, longTerm_editNotifyCtrl_el.hiddenInput);
-
-    // --- Event Listeners ---
-    const phoneInput = document.getElementById('phone');
-    const phoneWarning = document.getElementById('phone-warning');
-    phoneInput.addEventListener('input', function() {
-      const inputVal = this.value.trim().replace(/\D/g, '');
-      const inputNoZero = inputVal.replace(/^0+/, '');
-      phoneWarning.classList.add('hidden'); phoneWarning.textContent = '';
-      if (inputNoZero.length < 6) return;
-      const found = allBlacklistData.find(row => {
-        const rPhone = String(row['電話']||row['連絡電話']||'').replace(/\D/g, '').replace(/^0+/, '');
-        return rPhone && rPhone === inputNoZero;
-      });
-      if (found) {
-           phoneWarning.textContent = `⚠️ 黑名單! 原因: ${found['原因']||''} (${found['姓名']||''})`;
-           phoneWarning.classList.remove('hidden');
-      }
-    });
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const store = storeSelect.value;
-      if (!store) { alert('請選店別'); return; }
-      submitButton.disabled = true; submitButton.textContent = '...';
-      try {
-        const fd = new FormData(form); fd.append('action', 'append'); fd.append('store', store);
-        const resp = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
         const json = await resp.json();
-        if (json.result === 'success') {
-          showMessage('success', '成功'); form.reset(); fetchOrderData();
-        } else throw new Error(json.error);
-      } catch (err) { showMessage('error', err.message); } finally {
-        submitButton.disabled = false; submitButton.textContent = '送出訂單';
-      }
-    });
-
-    storeSelect.addEventListener('change', async ()=>{ 
-      const store = storeSelect.value;
-      if(store) localStorage.setItem('selected_store', store);
-      await updateStoreLockUI(); fetchOrderData();
-      if (storeSelect.options[storeSelect.selectedIndex]) currentStoreDisplay.textContent = storeSelect.options[storeSelect.selectedIndex].text;
-    });
-
-    storeLockCheckbox.addEventListener('change', async ()=> {
-      const store = storeSelect.value;
-      if(!store){ storeLockCheckbox.checked = false; return; }
-      const ok = await setStoreLockValue(store, storeLockCheckbox.checked);
-      if(ok) updateStoreLockUI(); else storeLockCheckbox.checked = !storeLockCheckbox.checked;
-    });
-
-    refreshStoresBtn.addEventListener('click', refreshStoresAndCreateMissing);
-    searchButton.addEventListener('click', filterAndDisplayData);
-    refreshButton.addEventListener('click', ()=>{ searchInput.value=''; fetchOrderData(); });
-
-    longTerm_searchButton.addEventListener('click', filterAndDisplayLongTermData);
-    longTerm_refreshButton.addEventListener('click', ()=>{ longTerm_searchInput.value=''; fetchOrderData(); });
-
-    if (clearOverdueBtn) {
-      clearOverdueBtn.addEventListener('click', async () => {
-        if (!confirm(`確定刪除逾期5天以上已取走的資料?`)) return;
-        clearOverdueBtn.disabled = true; clearOverdueBtn.textContent = '...';
-        // Logic similar to original but simplified for length
-        const now = new Date();
-        const toDelete = allOrders.filter(o => {
-           const pStr = o['取走日期']; if(!pStr) return false;
-           const pDate = new Date(parseMultiDateStringToArray(pStr)[0]);
-           return !isNaN(pDate) && (now - pDate) > (5 * 86400000);
-        }).sort((a,b)=>b['__row']-a['__row']);
-        
-        for(let item of toDelete) await deleteRowSilent(item['__row']);
-        alert(`已刪除 ${toDelete.length} 筆`);
-        clearOverdueBtn.disabled = false; clearOverdueBtn.textContent = '清除逾期';
-        fetchOrderData();
-      });
+        return json && json.result === 'success';
+      }catch(err){ console.warn('setStoreLockValue error', err); return false; }
     }
 
-    // Modal Edit Submits
-    [editForm, longTerm_editForm].forEach(f => {
-       f.addEventListener('submit', async(e)=>{
-         e.preventDefault();
-         const store = storeSelect.value;
-         const btn = e.target.querySelector('button[type="submit"]');
-         btn.disabled=true; btn.textContent='...';
-         try{
-           const fd = new FormData(f); fd.append('action','update'); fd.append('store', store);
-           const resp = await fetch(SCRIPT_URL, {method:'POST', body:fd});
-           if((await resp.json()).result==='success'){ closeModal(); longTerm_closeModal(); fetchOrderData(); }
-           else alert('失敗');
-         }catch(er){console.error(er);}finally{ btn.disabled=false; btn.textContent='儲存'; }
-       });
-    });
-    
-    document.getElementById('deleteEdit').addEventListener('click', ()=>{
-        deleteRow(document.getElementById('editRowIndex').value);
-    });
-    document.getElementById('longTerm_deleteEdit').addEventListener('click', ()=>{
-        deleteRow(document.getElementById('longTerm_editRowIndex').value);
-    });
-    
-    // Blacklist Modal Logic
-    const blEditModal = document.getElementById('blacklist_editModalBackdrop');
-    const blEditForm = document.getElementById('blacklist_editForm');
-    document.getElementById('blacklist_closeEditModal').addEventListener('click', () => blEditModal.classList.add('hidden'));
-    document.getElementById('blacklist_cancelEdit').addEventListener('click', () => blEditModal.classList.add('hidden'));
-
-    function openBlacklistEditModal(row) {
-      document.getElementById('blacklist_editRowIndex').value = row['__row'];
-      document.getElementById('bl_edit_custID').value = row['客號'] || '';
-      document.getElementById('bl_edit_name').value = row['姓名'] || '';
-      document.getElementById('bl_edit_phone').value = row['電話'] || row['連絡電話'] || '';
-      document.getElementById('bl_edit_store').value = row['店別'] || '';
-      document.getElementById('bl_edit_reason').value = row['原因'] || '';
-      document.getElementById('bl_edit_date').value = toDateOnly(row['日期'] || '');
-      document.getElementById('bl_edit_notes').value = row['備註'] || '';
-      blEditModal.classList.remove('hidden');
-    }
-    
-    async function deleteBlacklistRow(idx){
-      if(!confirm('刪除黑名單?')) return;
-      const fd = new FormData(); fd.append('action', 'delete'); fd.append('targetSheet','blacklist'); fd.append('row', idx);
-      await fetch(SCRIPT_URL, {method:'POST', body:fd});
-      fetchBlacklistData();
-    }
-    
-    blacklistAddButton.addEventListener('click', openBlacklistAddModal);
-    blacklistCloseAddModal.addEventListener('click', closeBlacklistAddModal);
-    blacklistCancelAdd.addEventListener('click', closeBlacklistAddModal);
-    
-    blacklistAddForm.addEventListener('submit', async(e)=>{
-      e.preventDefault();
-      const btn = blacklistAddForm.querySelector('button[type="submit"]'); btn.disabled=true;
-      try{
-         const fd=new FormData(blacklistAddForm); fd.append('action','add_blacklist');
-         const r = await fetch(SCRIPT_URL, {method:'POST', body:fd});
-         if((await r.json()).result==='success'){ closeBlacklistAddModal(); blacklistAddForm.reset(); fetchBlacklistData(); }
-      }catch(e){alert('失敗');}finally{btn.disabled=false;}
-    });
-    
-    blEditForm.addEventListener('submit', async(e)=>{
-      e.preventDefault();
-      const btn=blEditForm.querySelector('button[type="submit"]'); btn.disabled=true;
-      try{
-        const fd=new FormData(blEditForm); fd.append('action','update'); fd.append('targetSheet','blacklist');
-        if((await (await fetch(SCRIPT_URL,{method:'POST',body:fd})).json()).result==='success'){
-           blEditModal.classList.add('hidden'); fetchBlacklistData();
-        }
-      }catch(e){alert('失敗');}finally{btn.disabled=false;}
-    });
-
-    // Date Buttons
-    document.querySelectorAll('[data-target]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const el = document.getElementById(btn.dataset.target);
-        if(el) el.value = todayLocalForInput();
-      });
-    });
-
-    // Init
-    window.addEventListener('load', async ()=>{
-      await fetchStores();
-      await fetchOrderData();
-      fetchBlacklistData();
-    });
-    
-    // Modal Listeners
-    closeEditModal.addEventListener('click', closeModal);
-    cancelEdit.addEventListener('click', (e)=>{ e.preventDefault(); closeModal(); });
-    longTerm_closeEditModal.addEventListener('click', longTerm_closeModal);
-    longTerm_cancelEdit.addEventListener('click', (e)=>{ e.preventDefault(); longTerm_closeModal(); });
-
-    // Open Modal Logic
-    function openEditModal(sheetRow){
-      const order = allOrders.find(o => String(o['__row']) === String(sheetRow));
-      if(!order) return;
-      document.getElementById('editRowIndex').value = order['__row'];
-      document.getElementById('editCustomerID').value = order['客號'] || '';
-      document.getElementById('editCustomerName').value = order['姓名'] || '';
-      document.getElementById('editPhone').value = formatPhone(order['連絡電話'] || '');
-      document.getElementById('editProductAName').value = order['客訂商品A'] || '';
-      document.getElementById('editProductASpec').value = order['A商品規格'] || '';
-      document.getElementById('editProductAQty').value = order['A數量'] || '';
-      document.getElementById('editProductBName').value = order['客訂商品B'] || '';
-      document.getElementById('editProductBSpec').value = order['B商品規格'] || '';
-      document.getElementById('editProductBQty').value = order['B數量'] || '';
-      document.getElementById('editPaid').checked = isChecked(order['付清']||order['paid']);
-      document.getElementById('editPurchaseDate').value = toDateOnly(order['採購日期']);
-      document.getElementById('editArrivalDate').value = toDateOnly(order['到貨日期']);
-      document.getElementById('editPickupDate').value = toDateOnly(order['取走日期']);
-      document.getElementById('editStoreTransfer').value = order['分店調撥'] || '';
-      document.getElementById('editNotes').value = order['備註'] || '';
-      editMissedCtrl.setItems(parseMultiDateStringToArray(order['未接電話日期']));
-      editNotifyCtrl.setItems(parseMultiDateStringToArray(order['通知日期']));
-      editModalBackdrop.classList.remove('hidden');
-    }
-
-    function openLongTermEditModal(sheetRow){
-      const order = allLongTermOrders.find(o => String(o['__row']) === String(sheetRow));
-      if(!order) return;
-      document.getElementById('longTerm_editRowIndex').value = order['__row'];
-      document.getElementById('longTerm_editCustomerID').value = order['客號'] || '';
-      document.getElementById('longTerm_editCustomerName').value = order['姓名'] || '';
-      document.getElementById('longTerm_editPhone').value = formatPhone(order['連絡電話'] || '');
-      document.getElementById('longTerm_editProductAName').value = order['客訂商品A'] || '';
-      document.getElementById('longTerm_editProductASpec').value = order['A商品規格'] || '';
-      document.getElementById('longTerm_editProductAQty').value = order['A數量'] || '';
-      document.getElementById('longTerm_editProductBName').value = order['客訂商品B'] || '';
-      document.getElementById('longTerm_editProductBSpec').value = order['B商品規格'] || '';
-      document.getElementById('longTerm_editProductBQty').value = order['B數量'] || '';
-      document.getElementById('longTerm_editPaid').checked = isChecked(order['付清']||order['paid']);
-      document.getElementById('longTerm_editStoreTransfer').value = order['分店調撥'] || '';
-      document.getElementById('longTerm_editNotes').value = order['備註'] || '';
-      longTerm_editPurchaseCtrl.setItems(parseMultiDateStringToArray(order['採購日期']));
-      longTerm_editArrivalCtrl.setItems(parseMultiDateStringToArray(order['到貨日期']));
-      longTerm_editPickupCtrl.setItems(parseMultiDateStringToArray(order['取走日期']));
-      longTerm_editMissedCtrl.setItems(parseMultiDateStringToArray(order['未接電話日期']));
-      longTerm_editNotifyCtrl.setItems(parseMultiDateStringToArray(order['通知日期']));
-      longTerm_editModalBackdrop.classList.remove('hidden');
-    }
   </script>
 </body>
 </html>
