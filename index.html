@@ -888,9 +888,9 @@
            else allOrders.push(r);
         });
         
-        const fixedHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        const fixedHeaders = ['姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
         renderTableHeaders(fixedHeaders);
-        const longTermHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        const longTermHeaders = ['姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
         renderLongTermTableHeaders(longTermHeaders);
 
         renderTable(); 
@@ -1009,7 +1009,6 @@
           <td class="text-center"> <!-- FIXED: Center using text-center -->
              <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteRow(${order['__row']})">刪除</button>
           </td>
-          <td data-label="客號">${order['客號'] || '-'}</td>
           <td data-label="姓名" class="font-medium text-gray-900">${order['姓名'] || '未知'}</td>
           <td data-label="手機號碼">${phoneDisplay}</td>
           <td data-label="商品" class="mobile-full-width">
@@ -1107,7 +1106,6 @@
           <td class="text-center"> <!-- FIXED: Center using text-center -->
              <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteRow(${order['__row']})">刪除</button>
           </td>
-          <td data-label="客號">${order['客號'] || '-'}</td>
           <td data-label="姓名" class="font-medium text-gray-900">${order['姓名'] || '未知'}</td>
           <td data-label="手機號碼">${phoneDisplay}</td>
           <td data-label="商品" class="mobile-full-width">
