@@ -22,7 +22,7 @@
       
       .responsive-table tbody tr {
         display: block;
-        background: white;
+        /* background: white;  <-- 由 JS 控制背景色 */
         margin-bottom: 1rem;
         border-radius: 0.75rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -36,7 +36,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 0.4rem 0;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid #f3f4f6; /* 手機版內部分隔線，需配合背景色調整，這裡暫時維持淺灰 */
         text-align: right;
         font-size: 0.95rem;
       }
@@ -82,11 +82,10 @@
       }
       .responsive-table td {
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9; /* 桌機版分隔線 */
         white-space: nowrap;
-        vertical-align: middle; /* 確保垂直置中 */
+        vertical-align: middle; 
       }
-      .responsive-table tr:hover td { background-color: #f8fafc; }
     }
 
     /* === 元件樣式 === */
@@ -167,13 +166,13 @@
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
     }
     
-    /* 鎖定時的樣式 - 確保 disabled 生效 */
+    /* 鎖定時的樣式 */
     .input-field:disabled, .select-disabled {
       background-color: #f3f4f6;
       color: #9ca3af;
       cursor: not-allowed;
       opacity: 0.7;
-      pointer-events: none; /* 防止點擊 */
+      pointer-events: none;
     }
     
     .section-title {
@@ -196,7 +195,7 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* Accordion 動畫修復 */
+    /* Accordion */
     .accordion-content {
       transition: grid-template-rows 0.3s ease-out;
       display: grid;
@@ -209,8 +208,6 @@
       overflow: hidden; 
       min-height: 0;
     }
-    
-    /* Accordion 標題列樣式 */
     .accordion-toggle {
       width: 100%; 
       display: flex; 
@@ -225,7 +222,6 @@
     .accordion-toggle.border-indigo-500 { border-left-color: #6366f1; }
     .accordion-toggle.border-blue-500 { border-left-color: #3b82f6; }
     .accordion-toggle.border-red-500 { border-left-color: #ef4444; }
-    
     .accordion-title {
       font-weight: 700;
       font-size: 1rem;
@@ -235,10 +231,10 @@
       gap: 0.5rem;
     }
 
-    /* 調整資料列表視窗高度 (約 15 行的高度) */
+    /* 捲動容器高度 */
     #dataTableContainer, #longTerm_dataTableContainer, #blacklist_dataTableContainer {
-      max-height: 750px; /* 增加高度，約可顯示 15 行 */
-      overflow: auto; /* 支援上下左右捲動 */
+      max-height: 750px;
+      overflow: auto;
     }
   </style>
 </head>
@@ -260,7 +256,7 @@
   <!-- 加寬 main 容器 -->
   <main class="w-full max-w-[96%] mx-auto p-4 space-y-5 pb-20">
 
-    <!-- 1. 控制台與店別選擇 (卡片樣式) -->
+    <!-- 1. 控制台與店別選擇 -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
       <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -285,7 +281,7 @@
       <div id="top-message" class="mt-2 text-sm font-medium hidden"></div>
     </div>
 
-    <!-- 2. 新增訂單 (Accordion) -->
+    <!-- 2. 新增訂單 -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <button id="formToggleBtn" class="accordion-toggle border-indigo-500 border-b border-gray-100">
         <div class="accordion-title">
@@ -298,7 +294,7 @@
       <div id="formContent" class="accordion-content">
         <div class="accordion-inner">
           <form id="orderForm" class="p-4 sm:p-6 space-y-6">
-            <!-- 顧客區塊 -->
+            <!-- 顧客資料 -->
             <div>
               <div class="section-title">顧客資料</div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -309,7 +305,17 @@
                   <input id="phone" name="連絡電話" type="tel" class="input-field" placeholder="09xx-xxx-xxx" />
                   <div id="phone-warning" class="hidden mt-1 text-xs text-red-600 font-bold bg-red-50 p-2 rounded flex items-center gap-1"><span>⚠️ 此號碼在黑名單中！</span></div>
                 </div>
-                <div class="sm:col-span-2"><label class="block text-xs font-medium text-gray-500 mb-1">LINE 名稱</label><input name="LINE名稱" type="text" class="input-field" /></div>
+                <!-- LINE 相關 (新增 Line通知) -->
+                <div class="sm:col-span-2 bg-green-50/50 p-3 rounded-lg border border-green-100">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">LINE 資訊</label>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer select-none border-r border-green-200 pr-3">
+                           <input name="Line通知" type="checkbox" value="是" class="w-4 h-4 text-green-600 rounded focus:ring-green-500" />
+                           <span class="text-sm font-bold text-green-700">LINE通知</span>
+                        </label>
+                        <input name="LINE名稱" type="text" class="input-field flex-1 text-sm" placeholder="請輸入 LINE 名稱" />
+                    </div>
+                </div>
               </div>
               <div class="flex gap-4 mt-3">
                  <label class="flex items-center gap-2 cursor-pointer"><input name="付清" type="checkbox" value="是" class="w-4 h-4 text-indigo-600 rounded" /><span class="text-sm text-gray-700">已付清</span></label>
@@ -317,7 +323,7 @@
               </div>
             </div>
 
-            <!-- 商品區塊 A -->
+            <!-- 商品 A -->
             <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
               <div class="section-title text-indigo-600 !border-indigo-200">客訂商品 A (必填)</div>
               <div class="space-y-3">
@@ -329,7 +335,7 @@
               </div>
             </div>
 
-            <!-- 商品區塊 B -->
+            <!-- 商品 B -->
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
               <div class="section-title">客訂商品 B (選填)</div>
               <div class="space-y-3">
@@ -351,7 +357,7 @@
       </div>
     </div>
 
-    <!-- 3. 資料查詢與列表區 (預設展開) -->
+    <!-- 3. 訂單管理 -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
       <div class="space-y-3 mb-4">
         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📋</span> 訂單管理</h2>
@@ -384,7 +390,7 @@
       </div>
     </div>
 
-    <!-- 4. 長期客訂 (Accordion) -->
+    <!-- 4. 長期客訂 -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <button id="longTermToggleBtn" class="accordion-toggle border-blue-500 border-b border-gray-100">
         <div class="accordion-title">
@@ -417,7 +423,7 @@
       </div>
     </div>
 
-    <!-- 5. 黑名單 (Accordion) -->
+    <!-- 5. 黑名單 -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <button id="blacklistToggleBtn" class="accordion-toggle border-red-500 border-b border-gray-100">
         <div class="accordion-title">
@@ -441,7 +447,6 @@
               <div id="blacklist_dataTableContainer" class="table-container hidden">
                 <table class="responsive-table">
                   <thead id="blacklist_data-table-headers">
-                      <!-- 這裡直接寫死表頭，確保結構完整 -->
                       <tr>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">狀態</th>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">操作</th>
@@ -479,6 +484,15 @@
              <div class="col-span-1"><label class="text-xs text-gray-500">客號</label><input id="editCustomerID" name="客號" class="input-field mt-1" /></div>
              <div class="col-span-1"><label class="text-xs text-gray-500">姓名</label><input id="editCustomerName" name="姓名" class="input-field mt-1" /></div>
              <div class="col-span-2"><label class="text-xs text-gray-500">電話</label><input id="editPhone" name="連絡電話" class="input-field mt-1" /></div>
+             
+             <!-- LINE 資訊 -->
+             <div class="col-span-2 bg-green-50 p-3 rounded-lg border border-green-100 flex items-center gap-3">
+                <label class="flex items-center gap-2 cursor-pointer select-none border-r border-green-200 pr-3">
+                   <input id="editLineNotify" name="Line通知" type="checkbox" value="是" class="w-4 h-4 text-green-600 rounded focus:ring-green-500" />
+                   <span class="text-sm font-bold text-green-700">LINE通知</span>
+                </label>
+                <input id="editLineName" name="LINE名稱" type="text" class="input-field flex-1 text-sm h-8" placeholder="LINE 名稱" />
+             </div>
              
              <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
                <div class="flex gap-2 mb-2"><input id="editProductAName" name="客訂商品A" class="input-field flex-[3]" placeholder="商品 A" /><input id="editProductAQty" name="A數量" type="number" class="input-field flex-[1] text-center" placeholder="數" /></div>
@@ -642,7 +656,7 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfDwaVTkHD-HGtY-6MzxscARnxwML9j1Ejn4v5cvPCAlgIPNRNkuU07r_61OBEVAYK/exec";
     
-    // Declare Element Collections (Defined BEFORE setupTagControls is called)
+    // Declare Element Collections
     const longTerm_editPurchaseCtrl_el = {
       addBtn: document.getElementById('longTerm_editAddPurchase'),
       stampBtn: document.getElementById('longTerm_editStampPurchase'),
@@ -679,7 +693,7 @@
       hiddenInput: document.getElementById('longTerm_editNotifyHidden')
     };
 
-    // Tag Helpers (Moved to top to prevent ReferenceError)
+    // Tag Helpers
     function setupTagControls(addBtn, stampBtn, inputEl, tagsContainer, hiddenInput){
       let items = [];
       addBtn && addBtn.addEventListener('click', ()=>{
@@ -730,7 +744,7 @@
     const form = document.getElementById('orderForm');
     const submitButton = document.getElementById('submitButton');
     const currentStoreBadge = document.getElementById('currentStoreBadge');
-    const topMessage = document.getElementById('top-message'); // Ensure this is defined
+    const topMessage = document.getElementById('top-message');
 
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
@@ -808,7 +822,6 @@
     }
     
     function formatFieldValueIfDate(header, val) {
-       // Simple passthrough or formatting if needed for blacklist
        if(!val) return '';
        if (header.includes('日期') || header.includes('Date')) {
            return formatDateShort(val);
@@ -874,7 +887,7 @@
       document.getElementById('dataLoader').classList.remove('hidden');
       document.getElementById('data-table-body').innerHTML = '';
       document.getElementById('noDataText').classList.add('hidden');
-      document.getElementById('data-message-box').classList.add('hidden'); // Clear previous errors
+      document.getElementById('data-message-box').classList.add('hidden');
       
       const store = storeSelect.value;
       const url = store ? `${SCRIPT_URL}?store=${encodeURIComponent(store)}` : SCRIPT_URL;
@@ -937,7 +950,6 @@
         const status = getStatus(o);
         if (currentFilter !== 'all' && status.key !== currentFilter) return false;
         if (!term) return true;
-        // Search Filter fix: search all values
         return Object.values(o).some(val => String(val).toLowerCase().includes(term));
       });
       filtered.sort((a,b) => {
@@ -948,17 +960,28 @@
       
       if(filtered.length === 0) { 
         noData.classList.remove('hidden'); 
-        tableContainer.classList.add('hidden'); // Hide table when empty
+        tableContainer.classList.add('hidden');
         return; 
       }
       else { 
         noData.classList.add('hidden'); 
-        tableContainer.classList.remove('hidden'); // Show table when has data
+        tableContainer.classList.remove('hidden');
       }
 
       filtered.forEach(order => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+        
+        // --- 核心邏輯：判斷 Line通知 決定背景色 ---
+        const isLineNotify = isChecked(order['Line通知']);
+        
+        if (isLineNotify) {
+            // 打勾：淺綠色，並加上 hover 效果
+            tr.className = 'bg-green-100 hover:bg-green-200 cursor-pointer transition-colors border-l-4 border-green-400';
+        } else {
+            // 沒打勾：維持原本的斑馬紋 (一行白、一行灰)
+            tr.className = 'bg-white even:bg-gray-50 hover:bg-indigo-50 cursor-pointer transition-colors';
+        }
+
         tr.onclick = (e) => { if(e.target.closest('button')) return; openEditModal(order); };
         const status = getStatus(order);
         
@@ -1047,17 +1070,17 @@
       
       if(filtered.length === 0) { 
         noData.classList.remove('hidden'); 
-        tableContainer.classList.add('hidden'); // Hide table when empty
+        tableContainer.classList.add('hidden');
         return; 
       }
       else { 
         noData.classList.add('hidden'); 
-        tableContainer.classList.remove('hidden'); // Show table when has data
+        tableContainer.classList.remove('hidden');
       }
       
       filtered.forEach(order => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+        tr.className = 'bg-white even:bg-gray-50 hover:bg-blue-50 cursor-pointer transition-colors';
         tr.onclick = (e) => { if(e.target.closest('button')) return; openLongTermEditModal(order); };
         const status = getStatus(order);
         
@@ -1178,6 +1201,11 @@
        document.getElementById('editProductBQty').value = order['B數量']||'';
        document.getElementById('editPaid').checked = (order['paid'] === '是' || order['paid'] === true || order['付清'] === '是');
        document.getElementById('editNotes').value = order['備註']||'';
+       
+       // Populate LINE info
+       document.getElementById('editLineName').value = order['LINE名稱'] || '';
+       document.getElementById('editLineNotify').checked = isChecked(order['Line通知']);
+       
        setInputDate('editPurchaseDate', order['採購日期']);
        setInputDate('editArrivalDate', order['到貨日期']);
        setInputDate('editPickupDate', order['取走日期']);
@@ -1392,7 +1420,7 @@
       
       filtered.forEach(row => {
          const tr = document.createElement('tr');
-         tr.className = 'hover:bg-red-50 cursor-pointer';
+         tr.className = 'bg-white even:bg-gray-50 hover:bg-red-50 cursor-pointer transition-colors';
          tr.onclick = (e) => { if(e.target.closest('button')) return; openBlacklistEditModal(row); };
          
          const data = resolveBlacklistRowData(row);
