@@ -227,7 +227,8 @@
       gap: 0.5rem;
     }
 
-    #dataTableContainer, #longTerm_dataTableContainer, #blacklist_dataTableContainer {
+    /* 捲動容器高度 */
+    #dataTableContainer, #longTerm_dataTableContainer, #blacklist_dataTableContainer, #historyDataContainer {
       max-height: 750px;
       overflow: auto;
     }
@@ -310,6 +311,7 @@
       <div id="formContent" class="accordion-content">
         <div class="accordion-inner">
           <form id="orderForm" class="p-4 sm:p-6 space-y-6">
+            <!-- 顧客區塊 -->
             <div>
               <div class="section-title">顧客資料</div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -337,6 +339,7 @@
               </div>
             </div>
 
+            <!-- 商品區塊 A -->
             <div class="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100">
               <div class="section-title text-indigo-600 !border-indigo-200">客訂商品 A (必填)</div>
               <div class="space-y-3">
@@ -348,6 +351,7 @@
               </div>
             </div>
 
+            <!-- 商品區塊 B -->
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
               <div class="section-title">客訂商品 B (選填)</div>
               <div class="space-y-3">
@@ -407,7 +411,7 @@
       </div>
     </div>
 
-    <!-- 4. 長期客訂 -->
+    <!-- 4. 長期客訂 (Accordion) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <button id="longTermToggleBtn" class="accordion-toggle border-blue-500 border-b border-gray-100">
         <div class="accordion-title">
@@ -440,7 +444,7 @@
       </div>
     </div>
 
-    <!-- 5. 黑名單 -->
+    <!-- 5. 黑名單 (Accordion) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <button id="blacklistToggleBtn" class="accordion-toggle border-red-500 border-b border-gray-100">
         <div class="accordion-title">
@@ -464,6 +468,7 @@
               <div id="blacklist_dataTableContainer" class="table-container hidden">
                 <table class="responsive-table">
                   <thead id="blacklist_data-table-headers">
+                      <!-- 這裡直接寫死表頭，確保結構完整 -->
                       <tr>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">狀態</th>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">操作</th>
@@ -501,7 +506,7 @@
          </div>
          <div id="historyDataContainer" class="flex-1 overflow-auto border border-gray-200 rounded-lg relative min-h-[300px]">
             <div id="historyLoader" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-white/80"><div class="loader"></div></div>
-            <p id="historyNoData" class="hidden text-center py-10 text-gray-400">查無資料</p>
+            <p id="historyNoData" class="hidden text-center py-10 text-gray-400">請輸入關鍵字進行搜尋</p>
             <table class="responsive-table">
                <thead><tr id="history-table-headers"></tr></thead>
                <tbody id="history-table-body"></tbody>
@@ -691,7 +696,7 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfDwaVTkHD-HGtY-6MzxscARnxwML9j1Ejn4v5cvPCAlgIPNRNkuU07r_61OBEVAYK/exec";
     
-    // Declare Element Collections
+    // Declare Element Collections (Defined BEFORE setupTagControls is called)
     const longTerm_editPurchaseCtrl_el = {
       addBtn: document.getElementById('longTerm_editAddPurchase'),
       stampBtn: document.getElementById('longTerm_editStampPurchase'),
@@ -728,7 +733,7 @@
       hiddenInput: document.getElementById('longTerm_editNotifyHidden')
     };
 
-    // Tag Helpers
+    // Tag Helpers (Moved to top to prevent ReferenceError)
     function setupTagControls(addBtn, stampBtn, inputEl, tagsContainer, hiddenInput){
       let items = [];
       addBtn && addBtn.addEventListener('click', ()=>{
@@ -870,6 +875,7 @@
     }
     
     function formatFieldValueIfDate(header, val) {
+       // Simple passthrough or formatting if needed for blacklist
        if(!val) return '';
        if (header.includes('日期') || header.includes('Date')) {
            return formatDateShort(val);
@@ -937,7 +943,7 @@
       document.getElementById('dataLoader').classList.remove('hidden');
       document.getElementById('data-table-body').innerHTML = '';
       document.getElementById('noDataText').classList.add('hidden');
-      document.getElementById('data-message-box').classList.add('hidden');
+      document.getElementById('data-message-box').classList.add('hidden'); // Clear previous errors
       
       const store = storeSelect.value;
       const url = store ? `${SCRIPT_URL}?store=${encodeURIComponent(store)}` : SCRIPT_URL;
@@ -951,9 +957,9 @@
            else allOrders.push(r);
         });
         
-        const fixedHeaders = ['姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        const fixedHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
         renderTableHeaders(fixedHeaders);
-        const longTermHeaders = ['姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        const longTermHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
         renderLongTermTableHeaders(longTermHeaders);
 
         renderTable(); 
@@ -1000,6 +1006,7 @@
         const status = getStatus(o);
         if (currentFilter !== 'all' && status.key !== currentFilter) return false;
         if (!term) return true;
+        // Search Filter fix: search all values
         return Object.values(o).some(val => String(val).toLowerCase().includes(term));
       });
       filtered.sort((a,b) => {
@@ -1010,12 +1017,12 @@
       
       if(filtered.length === 0) { 
         noData.classList.remove('hidden'); 
-        tableContainer.classList.add('hidden');
+        tableContainer.classList.add('hidden'); // Hide table when empty
         return; 
       }
       else { 
         noData.classList.add('hidden'); 
-        tableContainer.classList.remove('hidden');
+        tableContainer.classList.remove('hidden'); // Show table when has data
       }
 
       filtered.forEach(order => {
@@ -1079,6 +1086,7 @@
           <td class="text-center"> <!-- FIXED: Center using text-center -->
              <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteRow(${order['__row']})">刪除</button>
           </td>
+          <td data-label="客號">${order['客號'] || '-'}</td>
           <td data-label="姓名" class="font-medium text-gray-900">${order['姓名'] || '未知'}</td>
           <td data-label="手機號碼">${phoneDisplay}</td>
           <td data-label="商品" class="mobile-full-width">
@@ -1117,12 +1125,12 @@
       
       if(filtered.length === 0) { 
         noData.classList.remove('hidden'); 
-        tableContainer.classList.add('hidden');
+        tableContainer.classList.add('hidden'); // Hide table when empty
         return; 
       }
       else { 
         noData.classList.add('hidden'); 
-        tableContainer.classList.remove('hidden');
+        tableContainer.classList.remove('hidden'); // Show table when has data
       }
       
       filtered.forEach(order => {
@@ -1257,6 +1265,7 @@
        setInputDate('editArrivalDate', order['到貨日期']);
        setInputDate('editPickupDate', order['取走日期']);
        
+       // Populate Tags for normal edit modal
        try {
          const missed = parseMultiDateStringToArray(order['未接電話日期']);
          const notify = parseMultiDateStringToArray(order['通知日期']);
@@ -1305,6 +1314,8 @@
        document.getElementById('bl_edit_name').value = data.name;
        document.getElementById('bl_edit_custID').value = data.id;
        document.getElementById('bl_edit_reason').value = data.reason;
+       // ... note handling ...
+       // If backend returns '備註' or 'Note', map it
        let note = row['備註'] || row['Note'] || '';
        document.getElementById('bl_edit_notes').value = note;
        
@@ -1328,9 +1339,14 @@
         historyTableHeaders.innerHTML = '';
         historyNoData.classList.add('hidden');
         
+        // 顯示提示文字 (選用)
+        historyNoData.textContent = '請輸入關鍵字進行搜尋';
+        historyNoData.classList.remove('hidden');
+        
         historyModalBackdrop.classList.remove('hidden');
-        // 自動觸發一次空搜尋 (載入最近紀錄)
-        performHistorySearch();
+        
+        // 修改：移除自動觸發搜尋，改為等待使用者操作
+        // performHistorySearch(); 
     });
     
     closeHistoryModal.addEventListener('click', () => {
@@ -1344,8 +1360,14 @@
         const store = storeSelect.value;
         const term = historySearchInput.value.trim();
         
+        if (!term) {
+            alert('請輸入搜尋關鍵字 (例如姓名、電話或商品名稱)');
+            return;
+        }
+        
         historyLoader.classList.remove('hidden');
         historyTableBody.innerHTML = '';
+        historyTableHeaders.innerHTML = ''; // 清空表頭，避免殘留
         historyNoData.classList.add('hidden');
         
         try {
@@ -1358,6 +1380,7 @@
                 const headers = json.headers || [];
                 
                 if(rows.length === 0) {
+                    historyNoData.textContent = '查無符合資料';
                     historyNoData.classList.remove('hidden');
                 } else {
                     renderHistoryTable(headers, rows);
