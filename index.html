@@ -820,6 +820,14 @@
     const refreshButton = document.getElementById('refreshButton');
     const clearOverdueBtn = document.getElementById('clearOverdueBtn');
     
+    const longTerm_searchInput = document.getElementById('longTerm_searchInput');
+    const longTerm_searchButton = document.getElementById('longTerm_searchButton');
+    const longTerm_refreshButton = document.getElementById('longTerm_refreshButton');
+
+    const blacklistSearchInput = document.getElementById('blacklist_searchInput');
+    const blacklistSearchButton = document.getElementById('blacklist_searchButton');
+    const blacklistAddButton = document.getElementById('blacklist_addButton');
+    
     // History Modal Elements
     const searchHistoryBtn = document.getElementById('searchHistoryBtn');
     const historyModalBackdrop = document.getElementById('historyModalBackdrop');
@@ -830,14 +838,6 @@
     const historyNoData = document.getElementById('historyNoData');
     const historyTableBody = document.getElementById('history-table-body');
     const historyTableHeaders = document.getElementById('history-table-headers');
-    
-    const longTerm_searchInput = document.getElementById('longTerm_searchInput');
-    const longTerm_searchButton = document.getElementById('longTerm_searchButton');
-    const longTerm_refreshButton = document.getElementById('longTerm_refreshButton');
-
-    const blacklistSearchInput = document.getElementById('blacklist_searchInput');
-    const blacklistSearchButton = document.getElementById('blacklist_searchButton');
-    const blacklistAddButton = document.getElementById('blacklist_addButton');
     
     // Data Variables
     let allOrders = [];
@@ -1033,7 +1033,6 @@
         const status = getStatus(o);
         if (currentFilter !== 'all' && status.key !== currentFilter) return false;
         if (!term) return true;
-        // Search Filter fix: search all values
         return Object.values(o).some(val => String(val).toLowerCase().includes(term));
       });
       filtered.sort((a,b) => {
