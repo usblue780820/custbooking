@@ -475,6 +475,7 @@
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">客號</th>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">姓名</th>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">電話</th>
+                        <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">店別</th>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">原因</th>
                         <th class="sticky top-0 z-30 bg-gray-100 text-gray-900 font-bold px-4 py-3 border-b-2 border-gray-200 whitespace-nowrap">日期</th>
                       </tr>
@@ -843,6 +844,7 @@
     let allOrders = [];
     let allLongTermOrders = [];
     let allBlacklistData = [];
+    let allStoresCache = []; // 新增：用於快取店別資料 (代碼 vs 名稱)
     let currentFilter = 'all';
     let dataTableHeaders = document.getElementById('data-table-headers');
     let longTerm_dataTableHeaders = document.getElementById('longTerm_data-table-headers');
@@ -937,6 +939,9 @@
         const resp = await fetch(`${SCRIPT_URL}?action=stores`);
         const json = await resp.json();
         const stores = json.stores || [];
+        
+        allStoresCache = stores; // 儲存店別清單以供查詢
+
         storeSelect.innerHTML = '<option value="">請選擇店別</option>';
         stores.forEach(s => {
           if(s.name === '店名' || s.code === '店編號') return;
@@ -1386,7 +1391,7 @@
     
     async function performHistorySearch() {
         const store = storeSelect.value;
-        const term = historySearchInput.value.trim();
+        const term = historySearchInput.value.trim(); // Keep original casing for display, convert for check
         
         if (!term) {
             alert('請輸入搜尋關鍵字 (例如姓名、電話或商品名稱)');
@@ -1395,7 +1400,7 @@
         
         historyLoader.classList.remove('hidden');
         historyTableBody.innerHTML = '';
-        historyTableHeaders.innerHTML = ''; // 清空表頭，避免殘留
+        historyTableHeaders.innerHTML = ''; 
         historyNoData.classList.add('hidden');
         
         try {
@@ -1404,8 +1409,21 @@
             const json = await resp.json();
             
             if(json.result === 'success') {
-                const rows = json.rows || [];
+                let rows = json.rows || [];
                 const headers = json.headers || [];
+                
+                // === 前端二次過濾 (Double Check) ===
+                // 確保搜尋結果真的包含關鍵字 (排除系統自動產生的行號 __row 干擾)
+                if (term) {
+                    const lowerTerm = term.toLowerCase();
+                    rows = rows.filter(r => {
+                        return Object.entries(r).some(([key, val]) => {
+                            // 忽略行號，只搜尋實際資料
+                            if (key === '__row') return false;
+                            return String(val).toLowerCase().includes(lowerTerm);
+                        });
+                    });
+                }
                 
                 if(rows.length === 0) {
                     historyNoData.textContent = '查無符合資料';
@@ -1425,46 +1443,44 @@
     }
     
     function renderHistoryTable(headers, rows) {
-        // Render Headers
         historyTableHeaders.innerHTML = '';
-        // 歷史資料通常包含「歸檔日期」，我們將其視為一般欄位顯示
-        // 我們只需要顯示重點欄位即可，避免過寬
-        // 假設 headers 包含: 歸檔日期, 客號, 姓名, 電話, 商品...
-        // 這裡做個簡單過濾，只顯示特定欄位
+        
+        // 定義要顯示的欄位關鍵字
         const displayCols = ['歸檔日期', '客號', '姓名', '電話', '連絡電話', '客訂商品A', '商品', '取走日期', '備註'];
         
-        // 建立表頭索引 map
-        const colMap = {};
-        headers.forEach((h, i) => {
-            // 找出最接近的 key
-            const matchedKey = displayCols.find(k => h.includes(k));
-            if(matchedKey || h.includes('Date')) { 
-                // 顯示這些欄位
+        // 建立「欄位名稱」清單 (取代索引，避免錯位)
+        const colNames = [];
+        
+        headers.forEach(h => {
+            // 判斷此標題是否包含我們要顯示的關鍵字
+            const shouldShow = displayCols.some(k => h.includes(k)) || h.includes('Date') || h.includes('日期');
+            if(shouldShow) { 
                 const th = document.createElement('th');
                 th.textContent = h;
                 th.className = "sticky top-0 bg-gray-100 px-4 py-2 border-b font-bold whitespace-nowrap";
                 historyTableHeaders.appendChild(th);
-                colMap[i] = true;
+                colNames.push(h); // 記錄標題名稱
             }
         });
         
-        // Render Rows
+        // 渲染資料列
         rows.forEach(row => {
             const tr = document.createElement('tr');
             tr.className = "hover:bg-gray-50 border-b";
             
-            // 根據 colMap 順序填入 td
-            Object.keys(colMap).forEach(idx => {
+            // 依據 colNames (標題名稱) 來抓取對應資料
+            colNames.forEach(key => {
                 const td = document.createElement('td');
                 td.className = "px-4 py-2 whitespace-nowrap text-sm";
-                let val = row[idx] || row[Object.keys(row)[idx]]; // Handle array or object
                 
-                // 簡單日期格式化
+                let val = row[key]; // 直接用 Key 取值，最準確
+                
+                // 日期簡單格式化
                 if(typeof val === 'string' && val.includes('T') && val.includes(':')) {
                     val = val.split('T')[0]; 
                 }
                 
-                td.textContent = val || '-';
+                td.textContent = (val !== undefined && val !== null) ? val : '-';
                 tr.appendChild(td);
             });
             historyTableBody.appendChild(tr);
@@ -1733,13 +1749,15 @@
       const phoneKey = findKey(['電話', 'Phone', 'Mobile', '手機', '連絡']);
       const reasonKey = findKey(['原因', 'Reason', '事由', '備註', '說明']);
       const dateKey = findKey(['日期', 'Date', 'Time']);
+      const storeKey = findKey(['店別', 'Store', '分店', 'StoreName']); 
 
       return {
         id: idKey ? row[idKey] : '-',
         name: nameKey ? row[nameKey] : '未知',
         phone: phoneKey ? row[phoneKey] : '',
         reason: reasonKey ? row[reasonKey] : '',
-        date: dateKey ? row[dateKey] : ''
+        date: dateKey ? row[dateKey] : '',
+        store: storeKey ? row[storeKey] : ''
       };
     }
     
@@ -1773,25 +1791,28 @@
          
          const data = resolveBlacklistRowData(row);
          const dateVal = formatFieldValueIfDate('日期', data.date);
+         const phoneVal = formatPhone(data.phone);
+
+         // === 修正：轉換店別代碼為中文店名 ===
+         let displayStoreName = data.store;
+         if (allStoresCache && allStoresCache.length > 0) {
+             const match = allStoresCache.find(s => s.code === data.store);
+             if (match && match.name) displayStoreName = match.name;
+         }
 
          tr.innerHTML = `
            <td class="status-badge missed">黑名單</td>
            <td class="text-center"> <!-- FIXED: Center delete button -->
-               <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteBlacklistRow(${row['__row']})">刪除</button>
+               <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="event.stopPropagation(); deleteBlacklistRow(${row['__row']})">刪除</button>
            </td>
            <td data-label="客號">${data.id}</td>
            <td data-label="姓名">${data.name}</td>
-           <td data-label="電話">${data.phone}</td>
+           <td data-label="電話">${phoneVal}</td>
+           <td data-label="店別">${displayStoreName}</td>
            <td data-label="原因" class="text-red-600">${data.reason}</td>
            <td data-label="日期">${dateVal}</td>
          `;
          
-         const delBtn = tr.querySelector('button[onclick^="deleteBlacklistRow"]');
-         if(delBtn) {
-            delBtn.onclick = (e) => { e.stopPropagation(); deleteBlacklistRow(row['__row']); };
-            delBtn.removeAttribute('onclick');
-         }
-
          tbody.appendChild(tr);
       });
     }
@@ -1823,12 +1844,49 @@
     document.getElementById('searchButton').addEventListener('click', renderTable);
     document.getElementById('searchInput').addEventListener('input', renderTable);
 
-    document.getElementById('blacklist_addButton').addEventListener('click', () => { document.getElementById('blacklist_addModalBackdrop').classList.remove('hidden'); });
+    document.getElementById('blacklist_addButton').addEventListener('click', () => { 
+        const currentStoreVal = storeSelect.value;
+        if(currentStoreVal) {
+            // 修改：抓取選單文字(店名)而非值(店號)
+            const currentStoreName = storeSelect.options[storeSelect.selectedIndex].text;
+            document.getElementById('blacklist_addStore').value = currentStoreName;
+        }
+        document.getElementById('blacklist_addModalBackdrop').classList.remove('hidden'); 
+    });
     document.getElementById('blacklist_closeAddModal').addEventListener('click', () => document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'));
     
     document.getElementById('blacklist_addForm').addEventListener('submit', async(e)=>{
        e.preventDefault();
-       try { const fd = new FormData(e.target); fd.append('action', 'add_blacklist'); await fetch(SCRIPT_URL, {method:'POST', body:fd}); alert('新增成功'); e.target.reset(); document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'); fetchBlacklistData(); } catch(e) { alert('失敗'); }
+       try { 
+         const fd = new FormData(e.target); 
+         fd.append('action', 'add_blacklist'); 
+         fd.append('targetSheet', 'blacklist');
+         
+         // 取得當前日期與店別
+         const today = todayLocalForInput();
+         const currentStore = document.getElementById('blacklist_addStore').value;
+
+         // --- 強制寫入多種常見欄位名稱，確保後端能抓到其中一個 ---
+         // 日期相關
+         fd.append('日期', today);
+         fd.append('Date', today);
+         fd.append('建立日期', today);
+         fd.append('時間', today);
+         
+         // 店別相關
+         if(currentStore) {
+             fd.append('店別', currentStore);
+             fd.append('分店', currentStore);
+             fd.append('Store', currentStore);
+             fd.append('StoreName', currentStore);
+         }
+         
+         await fetch(SCRIPT_URL, {method:'POST', body:fd}); 
+         alert('新增成功'); 
+         e.target.reset(); 
+         document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'); 
+         fetchBlacklistData(); 
+       } catch(e) { alert('失敗: ' + e.message); }
     });
     
     // Modal Submits
@@ -1845,6 +1903,10 @@
       btn.addEventListener('click', () => { document.getElementById(btn.dataset.target).value = todayLocalForInput(); });
     });
     
+    // Cancel buttons for Blacklist modals
+    document.getElementById('blacklist_cancelAdd').addEventListener('click', () => { document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'); });
+    document.getElementById('blacklist_cancelEdit').addEventListener('click', () => { document.getElementById('blacklist_editModalBackdrop').classList.add('hidden'); });
+
     async function setStoreLockValue(store, locked){
       if(!store) return;
       try{
