@@ -911,6 +911,11 @@
        }
        return val;
     }
+    
+    function getSelectedStoreName() {
+        const opt = storeSelect.options[storeSelect.selectedIndex];
+        return opt ? (opt.dataset.name || opt.text) : '';
+    }
 
     // Tabs
     function renderTabs() {
@@ -946,7 +951,10 @@
         stores.forEach(s => {
           if(s.name === '店名' || s.code === '店編號') return;
           const opt = document.createElement('option');
-          opt.value = s.code; opt.textContent = s.name ? `${s.name}` : s.code;
+          opt.value = s.code; 
+          opt.textContent = s.name ? `${s.name}` : s.code;
+          // === 修正：加入 data-name 屬性以確保能抓到正確店名 ===
+          opt.dataset.name = s.name || s.code;
           storeSelect.appendChild(opt);
         });
         const saved = localStorage.getItem('selected_store');
@@ -1377,9 +1385,6 @@
         historyNoData.classList.remove('hidden');
         
         historyModalBackdrop.classList.remove('hidden');
-        
-        // 修改：移除自動觸發搜尋，改為等待使用者操作
-        // performHistorySearch(); 
     });
     
     closeHistoryModal.addEventListener('click', () => {
@@ -1538,12 +1543,19 @@
         return;
       }
       
+      // === 修正：讀取設定時使用店名而非代碼 ===
+      const storeName = getSelectedStoreName();
+      if(!storeName) return;
+
       notifyToggle.disabled = false; // Enable interaction
       
       try {
-        const resp = await fetch(`${SCRIPT_URL}?action=get_store_settings&store=${encodeURIComponent(store)}`);
+        // 傳送店名而非 value
+        const resp = await fetch(`${SCRIPT_URL}?action=get_store_settings&store=${encodeURIComponent(storeName)}`);
         const json = await resp.json();
         if (json.result === 'success') {
+          // 只在非使用者操作時更新 (這裡其實是讀取伺服器端的設定狀態)
+          // 注意：如果 storeLockCheckbox 剛剛被使用者點擊，這裡可能會覆蓋狀態，但通常 fetchStores -> checkStoreSettings 是初始化流程
           storeLockCheckbox.checked = (json.settings.locked === '1');
           notifyToggle.checked = (json.settings.notify_enabled === '1');
           
@@ -1579,7 +1591,10 @@
       }
       showTopMessage(locked ? '店別已鎖定' : '店別已解鎖', false);
 
-      const ok = await setStoreLockValue(store, locked);
+      // === 修正：鎖定時傳送店名 ===
+      const storeName = getSelectedStoreName();
+      const ok = await setStoreLockValue(locked);
+      
       if(!ok){
         showTopMessage('設定店別鎖定失敗，已還原狀態', true);
         storeLockCheckbox.checked = !locked;
@@ -1609,12 +1624,15 @@
         
         // Optimistic update done by checkbox itself, now verify with backend
         try {
-            const fd = new FormData();
-            fd.append('action', 'set_notify_status');
-            fd.append('store', store);
-            fd.append('enabled', isEnabled ? '1' : '0');
+            // === 修正：通知設定傳送店名 ===
+            const storeName = getSelectedStoreName();
             
-            await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+            const params = new URLSearchParams();
+            params.append('action', 'set_notify_status');
+            params.append('store', storeName); // 使用店名
+            params.append('enabled', isEnabled ? '1' : '0');
+            
+            await fetch(SCRIPT_URL, { method: 'POST', body: params });
             showTopMessage(`已${msg}逾期通知`, false);
         } catch (err) {
             alert('設定失敗，請檢查網路連線');
@@ -1622,12 +1640,18 @@
         }
     });
     
-    document.getElementById('refreshStoresBtn').addEventListener('click', async()=>{ await fetch(SCRIPT_URL,{method:'POST',body:new FormData().append('action','create_store_sheets')}); await fetchStores(); });
+    // === 修正：重整分店按鈕語法錯誤 ===
+    document.getElementById('refreshStoresBtn').addEventListener('click', async()=>{ 
+        const fd = new FormData();
+        fd.append('action','create_store_sheets');
+        await fetch(SCRIPT_URL,{method:'POST',body:fd}); 
+        await fetchStores(); 
+    });
     
     // Backup Button Listener
     document.getElementById('backupBtn').addEventListener('click', () => {
         const store = storeSelect.value;
-        const storeName = storeSelect.options[storeSelect.selectedIndex]?.text || '';
+        const storeName = getSelectedStoreName(); // 使用正確的店名變數
         
         let htmlContent = '';
         if (store) {
@@ -1657,19 +1681,22 @@
     cancelBackupBtn.addEventListener('click', () => backupModalBackdrop.classList.add('hidden'));
     
     confirmBackupBtn.addEventListener('click', async () => {
-        // Close modal first or keep open? Let's disable button to show processing
         confirmBackupBtn.disabled = true;
         confirmBackupBtn.textContent = '備份中...';
         
         const store = storeSelect.value;
+        const storeName = getSelectedStoreName();
         
         try {
-            const fd = new FormData();
-            fd.append('action', 'backup_database');
-            if(store) fd.append('store', store);
+            // === 修正：備份功能改用 URLSearchParams 確保參數正確傳遞 ===
+            const params = new URLSearchParams();
+            params.append('action', 'backup_database');
+            // 修正：備份指定分店時，傳送 Store Name 而非 Code
+            if(store) params.append('store', storeName);
             
-            const resp = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+            const resp = await fetch(SCRIPT_URL, { method: 'POST', body: params });
             const json = await resp.json();
+            
             if (json.result === 'success') {
                 alert(json.message || '備份成功！');
                 backupModalBackdrop.classList.add('hidden');
@@ -1699,9 +1726,11 @@
         btn.textContent = '整理中...';
         
         try {
+            // === 修正：清除逾期也改送店名，確保後端能抓到正確工作表 ===
+            const storeName = getSelectedStoreName();
             const fd = new FormData();
             fd.append('action', 'clean_overdue');
-            fd.append('store', store);
+            fd.append('store', storeName); 
             
             const resp = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
             const json = await resp.json();
@@ -1907,14 +1936,19 @@
     document.getElementById('blacklist_cancelAdd').addEventListener('click', () => { document.getElementById('blacklist_addModalBackdrop').classList.add('hidden'); });
     document.getElementById('blacklist_cancelEdit').addEventListener('click', () => { document.getElementById('blacklist_editModalBackdrop').classList.add('hidden'); });
 
-    async function setStoreLockValue(store, locked){
+    async function setStoreLockValue(locked){
       if(!store) return;
       try{
-        const fd = new FormData();
-        fd.append('action','set_store_lock');
-        fd.append('store', store);
-        fd.append('locked', locked ? '1' : '0');
-        const resp = await fetch(SCRIPT_URL, { method:'POST', body: fd });
+        // === 修正：鎖定功能改用 URLSearchParams 確保參數正確傳遞 ===
+        const params = new URLSearchParams();
+        params.append('action', 'set_store_lock');
+        params.append('store', getSelectedStoreName());
+        params.append('locked', locked ? '1' : '0');
+        
+        const resp = await fetch(SCRIPT_URL, { 
+            method: 'POST', 
+            body: params 
+        });
         const json = await resp.json();
         return json && json.result === 'success';
       }catch(err){ console.warn('setStoreLockValue error', err); return false; }
