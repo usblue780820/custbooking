@@ -516,6 +516,25 @@
     </div>
   </div>
 
+  <!-- Backup Modal -->
+  <div id="backupModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[70]">
+    <div class="modal-card w-full max-w-sm m-4">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-green-50">
+        <h3 class="font-bold text-green-800 text-lg">備份確認</h3>
+        <button id="closeBackupModal" class="text-gray-400 hover:text-gray-600">&times;</button>
+      </div>
+      <div class="p-6">
+        <div id="backupModalContent" class="text-gray-700 mb-6">
+           <!-- Dynamic Content -->
+        </div>
+        <div class="flex justify-end gap-3">
+           <button id="cancelBackupBtn" class="btn bg-gray-100 text-gray-600 px-4 py-2 hover:bg-gray-200">取消</button>
+           <button id="confirmBackupBtn" class="btn bg-green-600 text-white px-4 py-2 shadow-md shadow-green-200 hover:bg-green-700">確認備份</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Modal -->
   <div id="editModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[60]">
     <div class="modal-card w-full max-w-lg m-4 max-h-[90vh]">
@@ -783,6 +802,14 @@
     const notifyToggle = document.getElementById('notifyToggle');
     const refreshStoresBtn = document.getElementById('refreshStoresBtn');
     const backupBtn = document.getElementById('backupBtn'); 
+    
+    // Backup Modal Elements
+    const backupModalBackdrop = document.getElementById('backupModalBackdrop');
+    const closeBackupModal = document.getElementById('closeBackupModal');
+    const cancelBackupBtn = document.getElementById('cancelBackupBtn');
+    const confirmBackupBtn = document.getElementById('confirmBackupBtn');
+    const backupModalContent = document.getElementById('backupModalContent');
+
     const form = document.getElementById('orderForm');
     const submitButton = document.getElementById('submitButton');
     const currentStoreBadge = document.getElementById('currentStoreBadge');
@@ -957,9 +984,9 @@
            else allOrders.push(r);
         });
         
-        const fixedHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        const fixedHeaders = ['姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
         renderTableHeaders(fixedHeaders);
-        const longTermHeaders = ['客號', '姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
+        const longTermHeaders = ['姓名', '手機號碼', '商品', '進度', '付清', '建立日期', '最後更新'];
         renderLongTermTableHeaders(longTermHeaders);
 
         renderTable(); 
@@ -1028,11 +1055,14 @@
       filtered.forEach(order => {
         const tr = document.createElement('tr');
         
+        // --- 核心邏輯：判斷 Line通知 決定背景色 ---
         const isLineNotify = isChecked(order['Line通知']);
         
         if (isLineNotify) {
+            // 打勾：淺綠色，並加上 hover 效果
             tr.className = 'bg-green-100 hover:bg-green-200 cursor-pointer transition-colors border-l-4 border-green-400';
         } else {
+            // 沒打勾：維持原本的斑馬紋 (一行白、一行灰)
             tr.className = 'bg-white even:bg-gray-50 hover:bg-indigo-50 cursor-pointer transition-colors';
         }
 
@@ -1086,7 +1116,6 @@
           <td class="text-center"> <!-- FIXED: Center using text-center -->
              <button type="button" class="btn bg-red-100 text-red-600 px-2 py-1 text-xs" onclick="deleteRow(${order['__row']})">刪除</button>
           </td>
-          <td data-label="客號">${order['客號'] || '-'}</td>
           <td data-label="姓名" class="font-medium text-gray-900">${order['姓名'] || '未知'}</td>
           <td data-label="手機號碼">${phoneDisplay}</td>
           <td data-label="商品" class="mobile-full-width">
@@ -1563,6 +1592,7 @@
         const isEnabled = notifyToggle.checked;
         const msg = isEnabled ? '開啟' : '關閉';
         
+        // Optimistic update done by checkbox itself, now verify with backend
         try {
             const fd = new FormData();
             fd.append('action', 'set_notify_status');
@@ -1580,23 +1610,43 @@
     document.getElementById('refreshStoresBtn').addEventListener('click', async()=>{ await fetch(SCRIPT_URL,{method:'POST',body:new FormData().append('action','create_store_sheets')}); await fetchStores(); });
     
     // Backup Button Listener
-    document.getElementById('backupBtn').addEventListener('click', async () => {
+    document.getElementById('backupBtn').addEventListener('click', () => {
         const store = storeSelect.value;
         const storeName = storeSelect.options[storeSelect.selectedIndex]?.text || '';
         
-        let msg = '確定要執行備份嗎？';
+        let htmlContent = '';
         if (store) {
-            msg = `確定要備份 [${storeName}] 的資料嗎？\n系統將會建立一個獨立的備份檔案。`;
+            htmlContent = `
+              <p class="font-bold text-gray-800 mb-2">確定要備份 [${storeName}] 的資料嗎？</p>
+              <ul class="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                <li>系統將會建立一個獨立的備份檔案。</li>
+                <li>檔案名稱將包含當前日期時間。</li>
+                <li>這不會影響目前的運作。</li>
+              </ul>
+            `;
         } else {
-            msg = '您尚未選擇分店，系統將會備份「整份試算表」(包含所有分店)。\n確定要繼續嗎？';
+            htmlContent = `
+              <p class="font-bold text-gray-800 mb-2">您尚未選擇分店，系統將執行【完整備份】。</p>
+              <ul class="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                <li>備份內容包含所有分店訂單、黑名單與設定。</li>
+                <li>檔案較大，請耐心等候。</li>
+              </ul>
+            `;
         }
         
-        if (!confirm(msg)) return;
+        backupModalContent.innerHTML = htmlContent;
+        backupModalBackdrop.classList.remove('hidden');
+    });
+
+    closeBackupModal.addEventListener('click', () => backupModalBackdrop.classList.add('hidden'));
+    cancelBackupBtn.addEventListener('click', () => backupModalBackdrop.classList.add('hidden'));
+    
+    confirmBackupBtn.addEventListener('click', async () => {
+        // Close modal first or keep open? Let's disable button to show processing
+        confirmBackupBtn.disabled = true;
+        confirmBackupBtn.textContent = '備份中...';
         
-        const btn = document.getElementById('backupBtn');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.textContent = '備份中...';
+        const store = storeSelect.value;
         
         try {
             const fd = new FormData();
@@ -1607,14 +1657,15 @@
             const json = await resp.json();
             if (json.result === 'success') {
                 alert(json.message || '備份成功！');
+                backupModalBackdrop.classList.add('hidden');
             } else {
                 alert('備份失敗：' + (json.error || '未知錯誤'));
             }
         } catch (e) {
             alert('備份請求失敗：' + e.message);
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
+            confirmBackupBtn.disabled = false;
+            confirmBackupBtn.textContent = '確認備份';
         }
     });
 
@@ -1718,7 +1769,7 @@
       
       filtered.forEach(row => {
          const tr = document.createElement('tr');
-         tr.className = 'bg-white even:bg-gray-50 hover:bg-red-50 cursor-pointer transition-colors';
+         tr.className = 'hover:bg-red-50 cursor-pointer';
          tr.onclick = (e) => { if(e.target.closest('button')) return; openBlacklistEditModal(row); };
          
          const data = resolveBlacklistRowData(row);
