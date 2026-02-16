@@ -475,7 +475,7 @@ document.getElementById('cancelBackupBtn').addEventListener('click', () => backu
 
 confirmBackupBtn.addEventListener('click', async () => {
     // 驗證超級管理員密碼
-    const pwd = prompt('請輸入超級管理員密碼 [0070] 以確認備份：');
+    const pwd = prompt('請輸入管理員密碼以確認備份：');
     if (pwd !== '0070') {
         alert('密碼錯誤，已取消備份。');
         return;
@@ -536,4 +536,5 @@ document.getElementById('clearOverdueBtn').addEventListener('click', async () =>
         btn.disabled = false;
         btn.textContent = '清除逾期';
     }
+
 });
