@@ -239,4 +239,5 @@ document.querySelectorAll('[data-target]').forEach(btn => {
 const formToggleBtn = document.getElementById('formToggleBtn');
 if (formToggleBtn) {
     toggleAccordion(formToggleBtn, document.getElementById('formContent'), document.getElementById('arrowIcon'));
+
 }
