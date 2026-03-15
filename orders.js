@@ -256,8 +256,11 @@ function renderTable() {
 
         const status = getStatus(order);
         
-        const productA = order['客訂商品A'] ? `[${order['客訂商品A']}]${order['A商品規格'] ? `(${order['A商品規格']})` : ''} ${order['A數量'] ? 'x' + order['A數量'] : ''}` : '';
-        const productB = order['客訂商品B'] ? `[${order['客訂商品B']}]${order['B商品規格'] ? `(${order['B商品規格']})` : ''} ${order['B數量'] ? 'x' + order['B數量'] : ''}` : '';
+        const isAOut = isChecked(order['A缺貨']) ? '<span class="text-red-600 font-bold mr-1">[缺貨]</span>' : '';
+        const productA = order['客訂商品A'] ? `${isAOut}[${order['客訂商品A']}]${order['A商品規格'] ? `(${order['A商品規格']})` : ''} ${order['A數量'] ? 'x' + order['A數量'] : ''}` : '';
+
+        const isBOut = isChecked(order['B缺貨']) ? '<span class="text-red-600 font-bold mr-1">[缺貨]</span>' : '';
+        const productB = order['客訂商品B'] ? `${isBOut}[${order['客訂商品B']}]${order['B商品規格'] ? `(${order['B商品規格']})` : ''} ${order['B數量'] ? 'x' + order['B數量'] : ''}` : '';
         
         let transferDisplay = '';
         if (order['分店調撥'] && order['分店調撥'].trim()) {
@@ -289,6 +292,7 @@ function renderTable() {
         let dateDisplay = '';
         if(order['採購日期']) dateDisplay += `<div class="text-xs text-blue-600">採購: ${formatDateMMDD(order['採購日期'])}</div>`;
         if(order['到貨日期']) dateDisplay += `<div class="text-xs text-purple-600">到貨: ${formatDateMMDD(order['到貨日期'])}</div>`;
+        if(order['缺貨通知日期']) dateDisplay += `<div class="text-xs text-red-600 font-bold">缺貨通知: ${formatDateMMDD(order['缺貨通知日期'])}</div>`;
         if(order['未接電話日期']) dateDisplay += `<div class="text-xs text-red-500">未接: ${formatMulti(order['未接電話日期'])}</div>`;
         if(order['通知日期']) dateDisplay += `<div class="text-xs text-orange-600">通知: ${formatMulti(order['通知日期'])}</div>`;
         if(order['取走日期']) dateDisplay += `<div class="text-xs text-green-600">取走: ${formatDateMMDD(order['取走日期'])}</div>`;
@@ -428,12 +432,17 @@ function openEditModal(order) {
     document.getElementById('editCustomerID').value = order['客號']||'';
     document.getElementById('editCustomerName').value = order['姓名']||'';
     document.getElementById('editPhone').value = order['電話']||order['連絡電話']||'';
+    
     document.getElementById('editProductAName').value = order['客訂商品A']||'';
+    document.getElementById('editProductAOutStock').checked = isChecked(order['A缺貨']);
     document.getElementById('editProductASpec').value = order['A商品規格']||'';
     document.getElementById('editProductAQty').value = order['A數量']||'';
+    
     document.getElementById('editProductBName').value = order['客訂商品B']||'';
+    document.getElementById('editProductBOutStock').checked = isChecked(order['B缺貨']);
     document.getElementById('editProductBSpec').value = order['B商品規格']||'';
     document.getElementById('editProductBQty').value = order['B數量']||'';
+    
     document.getElementById('editPaid').checked = (order['paid'] === '是' || order['paid'] === true || order['付清'] === '是');
     document.getElementById('editNotes').value = order['備註']||'';
     document.getElementById('editLineName').value = order['LINE名稱'] || '';
@@ -441,6 +450,7 @@ function openEditModal(order) {
     
     setInputDate('editPurchaseDate', order['採購日期']);
     setInputDate('editArrivalDate', order['到貨日期']);
+    setInputDate('editOutStockDate', order['缺貨通知日期']);
     setInputDate('editPickupDate', order['取走日期']);
     
     setupStoreTransferUI();
