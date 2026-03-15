@@ -560,11 +560,25 @@
              </div>
              
              <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
-               <div class="flex gap-2 mb-2"><input id="editProductAName" name="客訂商品A" class="input-field flex-[3]" placeholder="商品 A" /><input id="editProductAQty" name="A數量" type="number" class="input-field flex-[1] text-center" placeholder="數" /></div>
+               <div class="flex gap-2 mb-2">
+                   <input id="editProductAName" name="客訂商品A" class="input-field flex-[3]" placeholder="商品 A" />
+                   <label class="flex items-center gap-1 shrink-0 cursor-pointer">
+                       <input type="checkbox" id="editProductAOutStock" name="A缺貨" value="是" class="w-4 h-4 text-red-600 rounded">
+                       <span class="text-xs font-bold text-red-600">缺貨</span>
+                   </label>
+                   <input id="editProductAQty" name="A數量" type="number" class="input-field flex-[1] text-center" placeholder="數" />
+               </div>
                <input id="editProductASpec" name="A商品規格" class="input-field text-sm" placeholder="規格 A" />
              </div>
              <div class="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
-               <div class="flex gap-2 mb-2"><input id="editProductBName" name="客訂商品B" class="input-field flex-[3]" placeholder="商品 B" /><input id="editProductBQty" name="B數量" type="number" class="input-field flex-[1] text-center" placeholder="數" /></div>
+               <div class="flex gap-2 mb-2">
+                   <input id="editProductBName" name="客訂商品B" class="input-field flex-[3]" placeholder="商品 B" />
+                   <label class="flex items-center gap-1 shrink-0 cursor-pointer">
+                       <input type="checkbox" id="editProductBOutStock" name="B缺貨" value="是" class="w-4 h-4 text-red-600 rounded">
+                       <span class="text-xs font-bold text-red-600">缺貨</span>
+                   </label>
+                   <input id="editProductBQty" name="B數量" type="number" class="input-field flex-[1] text-center" placeholder="數" />
+               </div>
                <input id="editProductBSpec" name="B商品規格" class="input-field text-sm" placeholder="規格 B" />
              </div>
 
@@ -573,6 +587,8 @@
                
                <div class="flex items-center gap-2"><span class="text-xs text-gray-500 w-14">到貨</span><input id="editArrivalDate" name="到貨日期" type="date" class="input-field flex-1 py-1 text-sm" /><button type="button" class="btn bg-blue-100 text-blue-700 text-xs px-2 py-1" data-target="editArrivalDate">今</button></div>
                
+               <div class="flex items-center gap-2"><span class="text-xs font-bold text-red-500 w-14">缺貨通知</span><input id="editOutStockDate" name="缺貨通知日期" type="date" class="input-field flex-1 py-1 text-sm" /><button type="button" class="btn bg-red-100 text-red-700 text-xs px-2 py-1" data-target="editOutStockDate">今</button></div>
+
                <div class="bg-red-50 p-2 rounded border border-red-100">
                    <div class="flex items-center gap-2 mb-1">
                        <span class="text-xs font-bold text-red-500 w-14">未接</span>
@@ -624,7 +640,13 @@
              <input id="longTerm_editPhone" name="連絡電話" class="input-field col-span-2" placeholder="電話" />
              
              <div class="col-span-2 bg-gray-50 p-2 rounded border">
-                <input id="longTerm_editProductAName" name="客訂商品A" class="input-field mb-2" placeholder="商品A" />
+                <div class="flex gap-2 mb-2">
+                    <input id="longTerm_editProductAName" name="客訂商品A" class="input-field flex-1" placeholder="商品A" />
+                    <label class="flex items-center gap-1 shrink-0 cursor-pointer">
+                        <input type="checkbox" id="longTerm_editProductAOutStock" name="A缺貨" value="是" class="w-4 h-4 text-red-600 rounded">
+                        <span class="text-xs font-bold text-red-600">缺貨</span>
+                    </label>
+                </div>
                 <div class="flex gap-2"><input id="longTerm_editProductASpec" name="A商品規格" class="input-field flex-1" placeholder="規格" /><input id="longTerm_editProductAQty" name="A數量" class="input-field w-20 text-center" placeholder="數" /></div>
              </div>
              
@@ -637,6 +659,11 @@
                  <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-purple-600 w-14">到貨</span><input id="longTerm_editArrivalInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddArrival" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampArrival" class="btn bg-purple-100 text-purple-600 text-xs px-2">今</button></div>
                  <div id="longTerm_editArrivalTags" class="flex flex-wrap gap-1"></div>
                </div>
+               
+               <div class="bg-gray-50 p-2 rounded border">
+                 <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-red-500 w-14">缺貨通知</span><input id="longTerm_editOutStockInput" name="缺貨通知日期" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" class="btn bg-red-100 text-red-700 text-xs px-2 py-1" data-target="longTerm_editOutStockInput">今</button></div>
+               </div>
+
                <div class="bg-red-50 p-2 rounded border border-red-100">
                  <div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold text-red-500 w-14">未接</span><input id="longTerm_editMissedInput" type="date" class="input-field flex-1 py-1 text-sm"/><button type="button" id="longTerm_editAddMissed" class="btn bg-white border text-xs px-2">+</button><button type="button" id="longTerm_editStampMissed" class="btn bg-red-100 text-red-600 text-xs px-2">今</button></div>
                  <div id="longTerm_editMissedTags" class="flex flex-wrap gap-1"></div>
@@ -657,7 +684,7 @@
             <button type="button" id="longTerm_deleteEdit" class="btn bg-red-50 text-red-600 flex-1 py-2">刪除</button>
             <button type="submit" id="longTerm_saveEdit" class="btn bg-blue-600 text-white flex-[2] py-2">儲存</button>
           </div>
-          <input type="hidden" id="longTerm_editProductBName" name="客訂商品B" /><input type="hidden" id="longTerm_editProductBSpec" name="B商品規格" /><input type="hidden" id="longTerm_editProductBQty" name="B數量" /><input type="checkbox" id="longTerm_editPaid" name="付清" class="hidden" /><input type="hidden" id="longTerm_editPurchaseHidden" name="採購日期" /><input type="hidden" id="longTerm_editArrivalHidden" name="到貨日期" /><input type="hidden" id="longTerm_editPickupHidden" name="取走日期" /><input type="hidden" id="longTerm_editMissedHidden" name="未接電話日期" /><input type="hidden" id="longTerm_editNotifyHidden" name="通知日期" /><input type="hidden" id="longTerm_editStoreTransfer" name="分店調撥" />
+          <input type="hidden" id="longTerm_editProductBName" name="客訂商品B" /><input type="hidden" id="longTerm_editProductBOutStock" name="B缺貨" /><input type="hidden" id="longTerm_editProductBSpec" name="B商品規格" /><input type="hidden" id="longTerm_editProductBQty" name="B數量" /><input type="checkbox" id="longTerm_editPaid" name="付清" class="hidden" /><input type="hidden" id="longTerm_editPurchaseHidden" name="採購日期" /><input type="hidden" id="longTerm_editArrivalHidden" name="到貨日期" /><input type="hidden" id="longTerm_editPickupHidden" name="取走日期" /><input type="hidden" id="longTerm_editMissedHidden" name="未接電話日期" /><input type="hidden" id="longTerm_editNotifyHidden" name="通知日期" /><input type="hidden" id="longTerm_editStoreTransfer" name="分店調撥" />
         </form>
       </div>
     </div>
