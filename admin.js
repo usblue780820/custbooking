@@ -61,8 +61,11 @@ function renderLongTermTable() {
         tr.onclick = (e) => { if(e.target.closest('button')) return; openLongTermEditModal(order); };
         const status = getStatus(order);
         
-        const productA = order['客訂商品A'] ? `[${order['客訂商品A']}]${order['A商品規格'] ? `(${order['A商品規格']})` : ''} ${order['A數量'] ? 'x' + order['A數量'] : ''}` : '';
-        const productB = order['客訂商品B'] ? `[${order['客訂商品B']}]${order['B商品規格'] ? `(${order['B商品規格']})` : ''} ${order['B數量'] ? 'x' + order['B數量'] : ''}` : '';
+        const isAOut = isChecked(order['A缺貨']) ? '<span class="text-red-600 font-bold mr-1">[缺貨]</span>' : '';
+        const productA = order['客訂商品A'] ? `${isAOut}[${order['客訂商品A']}]${order['A商品規格'] ? `(${order['A商品規格']})` : ''} ${order['A數量'] ? 'x' + order['A數量'] : ''}` : '';
+        
+        const isBOut = isChecked(order['B缺貨']) ? '<span class="text-red-600 font-bold mr-1">[缺貨]</span>' : '';
+        const productB = order['客訂商品B'] ? `${isBOut}[${order['客訂商品B']}]${order['B商品規格'] ? `(${order['B商品規格']})` : ''} ${order['B數量'] ? 'x' + order['B數量'] : ''}` : '';
 
         const formatMulti = (val) => {
             if(!val) return '';
@@ -78,6 +81,7 @@ function renderLongTermTable() {
         let dateDisplay = '';
         if(order['採購日期']) dateDisplay += `<div class="text-xs text-blue-600">採購: ${formatMulti(order['採購日期'])}</div>`;
         if(order['到貨日期']) dateDisplay += `<div class="text-xs text-purple-600">到貨: ${formatMulti(order['到貨日期'])}</div>`;
+        if(order['缺貨通知日期']) dateDisplay += `<div class="text-xs text-red-600 font-bold">缺貨通知: ${formatMulti(order['缺貨通知日期'])}</div>`;
         if(order['未接電話日期']) dateDisplay += `<div class="text-xs text-red-500">未接: ${formatMulti(order['未接電話日期'])}</div>`;
         if(order['通知日期']) dateDisplay += `<div class="text-xs text-orange-600">通知: ${formatMulti(order['通知日期'])}</div>`;
         if(order['取走日期']) dateDisplay += `<div class="text-xs text-green-600">取走: ${formatMulti(order['取走日期'])}</div>`;
@@ -112,15 +116,22 @@ function openLongTermEditModal(order) {
     document.getElementById('longTerm_editCustomerID').value = order['客號']||'';
     document.getElementById('longTerm_editCustomerName').value = order['姓名']||'';
     document.getElementById('longTerm_editPhone').value = order['電話']||order['連絡電話']||'';
+    
     document.getElementById('longTerm_editProductAName').value = order['客訂商品A']||'';
+    document.getElementById('longTerm_editProductAOutStock').checked = isChecked(order['A缺貨']);
     document.getElementById('longTerm_editProductASpec').value = order['A商品規格']||'';
     document.getElementById('longTerm_editProductAQty').value = order['A數量']||'';
+    
     document.getElementById('longTerm_editProductBName').value = order['客訂商品B']||'';
+    document.getElementById('longTerm_editProductBOutStock').value = order['B缺貨']||'';
     document.getElementById('longTerm_editProductBSpec').value = order['B商品規格']||'';
     document.getElementById('longTerm_editProductBQty').value = order['B數量']||'';
+    
     document.getElementById('longTerm_editPaid').checked = (order['paid'] === '是' || order['paid'] === true || order['付清'] === '是');
     document.getElementById('longTerm_editStoreTransfer').value = order['分店調撥'] || '';
     document.getElementById('longTerm_editNotes').value = order['備註'] || order['說明'] || '';
+    
+    setInputDate('longTerm_editOutStockInput', order['缺貨通知日期']);
     
     try{
         const purchase = parseMultiDateStringToArray(order['採購日期']);
