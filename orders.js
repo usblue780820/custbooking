@@ -496,6 +496,13 @@ document.getElementById('editForm').addEventListener('submit', async(e)=>{
         editStoreTransferHidden.value = '';
     }
     const fd = new FormData(e.target); 
+    
+    // 修正：當 checkbox 未勾選時，手動加入空值以清空後端資料
+    if (!document.getElementById('editProductAOutStock').checked) fd.append('A缺貨', '');
+    if (!document.getElementById('editProductBOutStock').checked) fd.append('B缺貨', '');
+    if (!document.getElementById('editPaid').checked) fd.append('付清', '');
+    if (!document.getElementById('editLineNotify').checked) fd.append('Line通知', '');
+
     fd.append('action','update'); 
     fd.append('store', storeSelect.value); 
     try {
