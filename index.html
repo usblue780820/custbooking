@@ -244,7 +244,12 @@
         </div>
         <h1 class="text-lg font-bold text-gray-800 tracking-tight">客訂系統</h1>
       </div>
-      <div id="currentStoreBadge" class="hidden px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium"></div>
+      <div class="flex items-center gap-2">
+        <div id="currentStoreBadge" class="hidden px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium"></div>
+        <button id="dashboardBtn" class="hidden btn bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 text-sm hover:bg-indigo-100 flex items-center gap-1 font-bold shadow-sm">
+          📊 儀表板
+        </button>
+      </div>
     </div>
   </nav>
 
@@ -381,7 +386,8 @@
            <div class="tab-scroll-container flex-1" id="statusTabs"></div>
            <div class="flex gap-2 ml-2 shrink-0">
              <button id="refreshButton" class="btn bg-white border border-gray-200 text-gray-600 p-2 rounded-full shadow-sm hover:bg-gray-50" title="重新整理">↺</button>
-             <button id="clearOverdueBtn" class="btn bg-white border border-orange-200 text-orange-600 px-3 py-1 text-xs hover:bg-orange-50">清除逾期</button>
+             <button id="showOutStockBtn" class="btn bg-white border border-red-200 text-red-600 px-3 py-1 text-xs hover:bg-red-50 font-bold shadow-sm">當前缺貨清單</button>
+             <button id="clearOverdueBtn" class="btn bg-white border border-orange-200 text-orange-600 px-3 py-1 text-xs hover:bg-orange-50 shadow-sm">清除逾期</button>
            </div>
         </div>
       </div>
@@ -477,6 +483,26 @@
   </main>
 
   <div id="blacklist-alert-bar" class="fixed bottom-0 inset-x-0 bg-red-600 text-white p-3 text-center font-bold shadow-lg z-50 hidden transform transition-transform translate-y-full"></div>
+
+  <!-- 新增：當前缺貨清單 Modal -->
+  <div id="outStockModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[80]">
+    <div class="modal-card w-full max-w-2xl m-4 max-h-[80vh] flex flex-col bg-[#f8fafc]">
+      <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-red-50 shadow-sm shrink-0">
+        <h3 class="font-bold text-red-800 text-lg flex items-center gap-2">
+          <span>⚠️</span> 當前缺貨清單
+        </h3>
+        <button id="closeOutStockModal" class="text-gray-400 hover:text-gray-600 p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="p-0 overflow-y-auto flex-1 bg-white max-h-[420px]">
+         <ul id="outStockList" class="divide-y divide-gray-100 hidden">
+            <!-- 缺貨清單將動態插入此處 -->
+         </ul>
+         <p id="outStockNoData" class="hidden text-center py-10 text-gray-400 font-medium">目前無缺貨商品</p>
+      </div>
+    </div>
+  </div>
 
   <div id="historyModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[60]">
     <div class="modal-card w-full max-w-4xl m-4 max-h-[90vh]">
@@ -736,8 +762,88 @@
       </div>
     </div>
   </div>
+
+  <div id="dashboardModalBackdrop" class="modal-backdrop hidden fixed inset-0 z-[80]">
+    <div class="modal-card w-full max-w-5xl m-4 max-h-[90vh] bg-[#f8fafc] flex flex-col">
+      <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm shrink-0">
+        <h3 class="font-bold text-indigo-800 text-xl flex items-center gap-2">
+          📊 <span id="dashboardTitle">營運總覽</span>
+        </h3>
+        <div class="flex items-center gap-3">
+          <button id="exportExcelBtn" class="btn bg-[#10b981] text-white px-4 py-1.5 hover:bg-[#059669] flex items-center gap-1 shadow-sm text-sm rounded-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            匯出Excel
+          </button>
+          <button id="closeDashboardModal" class="text-gray-400 hover:text-gray-600 p-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 space-y-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-24">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-400"></div>
+            <div class="text-gray-500 font-bold text-xs ml-2">待處理</div>
+            <div class="text-3xl font-bold text-gray-800 ml-2" id="dashPending">0</div>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-24">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#3b82f6]"></div>
+            <div class="text-gray-500 font-bold text-xs ml-2">已採購 / 調撥</div>
+            <div class="text-3xl font-bold text-[#3b82f6] ml-2" id="dashPurchased">0</div>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-24">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#a855f7]"></div>
+            <div class="text-gray-500 font-bold text-xs ml-2">已到貨</div>
+            <div class="text-3xl font-bold text-[#a855f7] ml-2" id="dashArrived">0</div>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-24">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#ef4444]"></div>
+            <div class="text-[#ef4444] font-bold text-xs ml-2">5天未更新警示</div>
+            <div class="flex items-end gap-2 ml-2">
+                <div class="text-3xl font-bold text-[#ef4444]" id="dashOverdue">0</div>
+                <div class="text-[10px] text-[#ef4444] mb-1 opacity-80">>5天未更新</div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-24">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#22c55e]"></div>
+            <div class="text-gray-500 font-bold text-xs ml-2">今日新增單</div>
+            <div class="text-3xl font-bold text-[#22c55e] ml-2" id="dashToday">0</div>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between h-24">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-800"></div>
+            <div class="text-gray-500 font-bold text-xs ml-2">黑名單警示</div>
+            <div class="text-3xl font-bold text-gray-800 ml-2" id="dashBlacklist">0</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">🏆 分店處理進度排行</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-max">
+                <thead>
+                  <tr class="border-b border-gray-100 text-gray-500 text-sm">
+                    <th class="py-2 font-bold px-2">分店名稱 ↕</th>
+                    <th class="py-2 font-bold px-2">總單量 ↕</th>
+                    <th class="py-2 font-bold px-2">待處理 ↕</th>
+                    <th class="py-2 font-bold px-2">逾期數 ↕</th>
+                    <th class="py-2 font-bold text-right px-2">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="dashStoreRankBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">🔥 熱門客訂商品 Top 10</h4>
+            <div id="dashHotItems" class="space-y-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   
-  <!-- 引入拆分後的 JS 檔案，請注意順序：工具 -> Admin -> 訂單(入口) -->
   <script src="utils.js"></script>
   <script src="admin.js"></script>
   <script src="orders.js"></script>
