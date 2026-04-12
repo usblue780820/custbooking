@@ -195,16 +195,20 @@ if (showOutStockBtn) {
                     if (status.key === '已取貨') return; 
 
                     if (isChecked(order['A缺貨']) && order['客訂商品A']) {
-                        const key = `${order['客訂商品A'].trim()}|${(order['A商品規格']||'').trim()}`;
+                        const name = String(order['客訂商品A']).trim();
+                        const spec = String(order['A商品規格'] || '').trim();
+                        const key = `${name}|${spec}`;
                         if (!outStockMap[key]) {
-                            outStockMap[key] = { name: order['客訂商品A'].trim(), spec: (order['A商品規格']||'').trim(), stores: new Set() };
+                            outStockMap[key] = { name: name, spec: spec, stores: new Set() };
                         }
                         outStockMap[key].stores.add(storeName);
                     }
                     if (isChecked(order['B缺貨']) && order['客訂商品B']) {
-                        const key = `${order['客訂商品B'].trim()}|${(order['B商品規格']||'').trim()}`;
+                        const name = String(order['客訂商品B']).trim();
+                        const spec = String(order['B商品規格'] || '').trim();
+                        const key = `${name}|${spec}`;
                         if (!outStockMap[key]) {
-                            outStockMap[key] = { name: order['客訂商品B'].trim(), spec: (order['B商品規格']||'').trim(), stores: new Set() };
+                            outStockMap[key] = { name: name, spec: spec, stores: new Set() };
                         }
                         outStockMap[key].stores.add(storeName);
                     }
