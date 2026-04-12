@@ -344,6 +344,7 @@ document.getElementById('blacklist_editForm').addEventListener('submit', async(e
 // ==========================================
 const storeLockCheckbox = document.getElementById('storeLockCheckbox');
 const notifyToggle = document.getElementById('notifyToggle');
+const notifyLongTermToggle = document.getElementById('notifyLongTermToggle'); // 新增長期客訂開關
 
 async function checkStoreSettings() {
     const store = storeSelect.value;
@@ -351,6 +352,10 @@ async function checkStoreSettings() {
         storeLockCheckbox.checked = false;
         notifyToggle.checked = false;
         notifyToggle.disabled = true; 
+        if (notifyLongTermToggle) {
+            notifyLongTermToggle.checked = false;
+            notifyLongTermToggle.disabled = true;
+        }
         return;
     }
     
@@ -358,6 +363,7 @@ async function checkStoreSettings() {
     if(!storeName) return;
 
     notifyToggle.disabled = false; 
+    if (notifyLongTermToggle) notifyLongTermToggle.disabled = false;
     
     try {
         const resp = await fetch(`${SCRIPT_URL}?action=get_store_settings&store=${encodeURIComponent(storeName)}`);
@@ -365,6 +371,9 @@ async function checkStoreSettings() {
         if (json.result === 'success') {
             storeLockCheckbox.checked = (json.settings.locked === '1');
             notifyToggle.checked = (json.settings.notify_enabled === '1');
+            if (notifyLongTermToggle) {
+                notifyLongTermToggle.checked = (json.settings.notify_long_term === '1');
+            }
             
             if(json.settings.locked === '1') {
                 storeSelect.classList.add('select-disabled');
@@ -449,6 +458,36 @@ notifyToggle.addEventListener('change', async (e) => {
         notifyToggle.checked = !isEnabled; 
     }
 });
+
+// 新增長期客訂通知設定
+if (notifyLongTermToggle) {
+    notifyLongTermToggle.addEventListener('change', async (e) => {
+        const store = storeSelect.value; 
+        if (!store) {
+            e.preventDefault();
+            notifyLongTermToggle.checked = false; 
+            alert('未選取店別無法設定');
+            return;
+        }
+        const isEnabled = notifyLongTermToggle.checked;
+        try {
+            const params = new URLSearchParams();
+            params.append('action', 'set_notify_long_term');
+            params.append('store', store); 
+            params.append('enabled', isEnabled ? '1' : '0');
+            const resp = await fetch(SCRIPT_URL, { method: 'POST', body: params });
+            const json = await resp.json();
+            if (json.result === 'success') {
+                showTopMessage(`已${isEnabled ? '開啟' : '關閉'}包含長期客訂逾期通知`, false);
+            } else {
+                throw new Error(json.error || '設定失敗');
+            }
+        } catch (err) {
+            alert('設定失敗: ' + err.message);
+            notifyLongTermToggle.checked = !isEnabled; 
+        }
+    });
+}
 
 
 // ==========================================
