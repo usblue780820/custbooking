@@ -55,7 +55,20 @@ let issueExistingPhotoUrl = '';
 const issuePhotoInput       = document.getElementById('issuePhotoInput');
 const issuePhotoPreview     = document.getElementById('issuePhotoPreview');
 const issuePhotoPreviewWrap = document.getElementById('issuePhotoPreviewContainer');
+const issuePhotoUploadArea  = document.getElementById('issuePhotoUploadArea');
 const issueRemovePhotoBtn   = document.getElementById('issueRemovePhotoBtn');
+
+function showIssuePhotoPreview(src) {
+    if (issuePhotoPreview) issuePhotoPreview.src = src;
+    if (issuePhotoPreviewWrap) issuePhotoPreviewWrap.classList.remove('hidden');
+    if (issuePhotoUploadArea)  issuePhotoUploadArea.classList.add('hidden');
+}
+
+function hideIssuePhotoPreview() {
+    if (issuePhotoPreview) issuePhotoPreview.src = '';
+    if (issuePhotoPreviewWrap) issuePhotoPreviewWrap.classList.add('hidden');
+    if (issuePhotoUploadArea)  issuePhotoUploadArea.classList.remove('hidden');
+}
 
 if (issuePhotoInput) {
     issuePhotoInput.addEventListener('change', (e) => {
@@ -66,8 +79,7 @@ if (issuePhotoInput) {
         const reader = new FileReader();
         reader.onload = (ev) => {
             const dataUrl = ev.target.result;
-            issuePhotoPreview.src = dataUrl;
-            issuePhotoPreviewWrap.classList.remove('hidden');
+            showIssuePhotoPreview(dataUrl);
             const parts = dataUrl.split(',');
             issuePhotoBase64   = parts[1];
             issuePhotoMimeType = file.type;
@@ -80,8 +92,7 @@ if (issueRemovePhotoBtn) {
     issueRemovePhotoBtn.addEventListener('click', () => {
         issuePhotoBase64 = ''; issuePhotoMimeType = ''; issueExistingPhotoUrl = '';
         if (issuePhotoInput) issuePhotoInput.value = '';
-        if (issuePhotoPreview) issuePhotoPreview.src = '';
-        if (issuePhotoPreviewWrap) issuePhotoPreviewWrap.classList.add('hidden');
+        hideIssuePhotoPreview();
     });
 }
 
@@ -276,12 +287,10 @@ function openIssueForm(issue) {
         issueNotifyDateCtrl.setItems(parseMultiDateStringToArray(issue['告知廠商日期']));
         issueExistingPhotoUrl = issue['圖片'] || '';
         const previewSrc = toDriveImgUrl(issueExistingPhotoUrl);
-        if (previewSrc && issuePhotoPreview && issuePhotoPreviewWrap) {
-            issuePhotoPreview.src = previewSrc;
-            issuePhotoPreviewWrap.classList.remove('hidden');
-        } else if (issuePhotoPreviewWrap) {
-            issuePhotoPreviewWrap.classList.add('hidden');
-            if (issuePhotoPreview) issuePhotoPreview.src = '';
+        if (previewSrc) {
+            showIssuePhotoPreview(previewSrc);
+        } else {
+            hideIssuePhotoPreview();
         }
         const delBtn = document.getElementById('issueDeleteBtn');
         if (delBtn) delBtn.classList.remove('hidden');
@@ -295,8 +304,7 @@ function openIssueForm(issue) {
         document.getElementById('issueNotes').value        = '';
         issueNotifyDateCtrl.setItems([]);
         issueExistingPhotoUrl = '';
-        if (issuePhotoPreviewWrap) issuePhotoPreviewWrap.classList.add('hidden');
-        if (issuePhotoPreview) issuePhotoPreview.src = '';
+        hideIssuePhotoPreview();
         const delBtn = document.getElementById('issueDeleteBtn');
         if (delBtn) delBtn.classList.add('hidden');
     }
