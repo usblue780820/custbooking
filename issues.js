@@ -86,6 +86,24 @@ if (issueRemovePhotoBtn) {
 }
 
 // ==========================================
+// 3b. Drive URL 正規化
+// ==========================================
+// Google 已封鎖 uc?export=view 在 <img> 直接載入
+// 統一轉為 lh3.googleusercontent.com/d/FILE_ID 格式
+function toDriveImgUrl(url) {
+    if (!url) return '';
+    // 已是 lh3 格式，直接回傳
+    if (url.includes('lh3.googleusercontent.com')) return url;
+    // uc?export=view&id=XXX 或 uc?id=XXX
+    const m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+    // /d/FILE_ID/view 格式
+    const m2 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (m2) return 'https://lh3.googleusercontent.com/d/' + m2[1];
+    return url;
+}
+
+// ==========================================
 // 4. 資料讀取
 // ==========================================
 async function fetchIssues() {
@@ -188,7 +206,8 @@ function renderIssuesList(issues) {
         const lastNotify   = notifyParts.length ? notifyParts[notifyParts.length - 1] : '';
         const planDate     = (issue['預計處理日期'] || '').trim();
         const completeDate = (issue['完成日期']     || '').trim();
-        const photoUrl     = (issue['圖片']         || '').trim();
+        const rawPhotoUrl  = (issue['圖片']         || '').trim();
+        const photoUrl     = toDriveImgUrl(rawPhotoUrl);
 
         const photoHtml = photoUrl
             ? `<a href="${photoUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
@@ -256,8 +275,9 @@ function openIssueForm(issue) {
         document.getElementById('issueNotes').value        = issue['備註'] || '';
         issueNotifyDateCtrl.setItems(parseMultiDateStringToArray(issue['告知廠商日期']));
         issueExistingPhotoUrl = issue['圖片'] || '';
-        if (issueExistingPhotoUrl && issuePhotoPreview && issuePhotoPreviewWrap) {
-            issuePhotoPreview.src = issueExistingPhotoUrl;
+        const previewSrc = toDriveImgUrl(issueExistingPhotoUrl);
+        if (previewSrc && issuePhotoPreview && issuePhotoPreviewWrap) {
+            issuePhotoPreview.src = previewSrc;
             issuePhotoPreviewWrap.classList.remove('hidden');
         } else if (issuePhotoPreviewWrap) {
             issuePhotoPreviewWrap.classList.add('hidden');
